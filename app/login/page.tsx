@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 // Login form validation schema
 const loginSchema = z.object({
@@ -26,11 +27,34 @@ const loginSchema = z.object({
 })
 
 export default function LoginPage() {
+  console.log("Login page - Component rendering")
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [redirecting, setRedirecting] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard"
+  console.log("Login page - callbackUrl:", callbackUrl)
 
+  // Get auth context
+  const { user, isLoading, isAuthenticated, login } = useAuth()
+  console.log("Login page - Auth state:", {
+    hasUser: !!user,
+    isLoading,
+    isAuthenticated
+  })
+
+  // Redirect if user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log(`Login page - User is authenticated, redirecting to: ${callbackUrl}`)
+      // Decode the URL if it's encoded
+      const decodedUrl = callbackUrl.startsWith('%2F') ? decodeURIComponent(callbackUrl) : callbackUrl
+      router.push(decodedUrl)
+    }
+  }, [isAuthenticated, user, router, callbackUrl])
+
+  // Form setup
   const form = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -38,48 +62,53 @@ export default function LoginPage() {
       password: "",
     },
   })
+  console.log("Login page - Form initialized")
 
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
+    console.log("Login page - Form submitted with username:", data.username)
+    setLocalError(null)
+
     try {
-      setIsLoading(true)
-      setError(null)
+      console.log("Login page - Calling login function from AuthContext")
 
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Terjadi kesalahan saat login')
+      // Prevent duplicate login attempts
+      if (redirecting || isLoading) {
+        console.log("Login page - Already processing login, ignoring duplicate submission")
+        return
       }
 
-      // Simpan token ke localStorage
-      localStorage.setItem('token', result.token)
-      localStorage.setItem('user', JSON.stringify(result.user))
+      const user = await login(data.username, data.password)
 
-      // Redirect berdasarkan role
-      if (result.user.role === 'ADMIN') {
-        router.push('/admin/dashboard')
-      } else if (result.user.role === 'PRODI') {
-        router.push('/prodi/dashboard')
+      if (user) {
+        console.log("Login page - Login successful, preparing to redirect")
+        setRedirecting(true)
+        // The useEffect above will handle the redirection after authentication
       } else {
-        router.push('/dashboard')
+        console.error("Login page - Login failed")
+        setLocalError("Login gagal. Silakan coba lagi.")
+        setRedirecting(false)
       }
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat login')
-    } finally {
-      setIsLoading(false)
+      console.error("Login page - Login error:", err)
+      setLocalError(err instanceof Error ? err.message : "Terjadi kesalahan saat login")
+      setRedirecting(false)
     }
   }
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword)
+  }
+
+  // Tampilkan loading saat sedang proses autentikasi
+  if (isLoading || redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg">Mengalihkan ke Dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -131,10 +160,10 @@ export default function LoginPage() {
               <p className="text-gray-500 mt-2">Masuk untuk mengakses sistem pelacakan data akreditasi</p>
             </div>
 
-            {error && (
+            {localError && (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{localError}</AlertDescription>
               </Alert>
             )}
 
@@ -152,7 +181,7 @@ export default function LoginPage() {
                           {...field}
                           autoComplete="username"
                           className="h-11"
-                          disabled={isLoading}
+                          disabled={isLoading || redirecting}
                         />
                       </FormControl>
                       <FormMessage />
@@ -173,7 +202,7 @@ export default function LoginPage() {
                             {...field}
                             autoComplete="current-password"
                             className="h-11 pr-10"
-                            disabled={isLoading}
+                            disabled={isLoading || redirecting}
                           />
                           <Button
                             type="button"
@@ -182,7 +211,7 @@ export default function LoginPage() {
                             className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground hover:text-foreground"
                             onClick={togglePasswordVisibility}
                             aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                            disabled={isLoading}
+                            disabled={isLoading || redirecting}
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
@@ -193,24 +222,24 @@ export default function LoginPage() {
                   )}
                 />
 
-                <Button type="submit" className="w-full h-11 text-base" disabled={isLoading}>
-                  {isLoading ? (
+                <Button type="submit" className="w-full h-11 text-base" disabled={isLoading || redirecting}>
+                  {isLoading || redirecting ? (
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Memproses...</span>
+                      <span>Memproses{isLoading ? " Login" : redirecting ? " Pengalihan" : ""}...</span>
                     </div>
                   ) : (
-                    "Masuk"
+                    <span>Masuk</span>
                   )}
                 </Button>
 
                 <div className="text-sm text-center text-muted-foreground mt-6 border-t pt-6">
                   <p>Kredensial Demo:</p>
-                  <p className="font-mono bg-muted p-2 rounded text-xs mt-2">
-                    Nama Pengguna: <span className="font-medium">dosen</span>
-                    <br />
-                    Kata Sandi: <span className="font-medium">password123</span>
-                  </p>
+                  <div className="font-mono bg-muted p-2 rounded text-xs mt-2">
+                    <p><strong>Dosen:</strong> username: <span className="font-medium">dosen</span> | password: <span className="font-medium">password123</span></p>
+                    <p className="mt-1"><strong>Admin:</strong> username: <span className="font-medium">admin</span> | password: <span className="font-medium">password123</span></p>
+                    <p className="mt-1"><strong>Prodi:</strong> username: <span className="font-medium">prodi</span> | password: <span className="font-medium">password123</span></p>
+                  </div>
                 </div>
               </form>
             </Form>

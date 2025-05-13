@@ -145,14 +145,9 @@ export default function NewResearchPage() {
                   Tahun Pelaksanaan <span className="text-red-500">*</span>
                 </Label>
                 <DatePicker
-                  id="tahun"
-                  mode="single"
-                  selected={new Date(formData.tahun, 0)}
-                  onSelect={handleDateChange}
-                  captionLayout="dropdown-buttons"
-                  fromYear={2020}
-                  toYear={2030}
-                  disabled={(date) => date > new Date() || date < new Date(2020, 0)}
+                  date={new Date(formData.tahun, 0)}
+                  setDate={handleDateChange}
+                  disabled={(date: Date) => date > new Date() || date < new Date(2020, 0)}
                 />
               </div>
             </div>

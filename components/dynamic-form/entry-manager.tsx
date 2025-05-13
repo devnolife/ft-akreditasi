@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,6 +19,7 @@ interface EntryManagerProps {
   dataKey: string
   documentCategory: DocumentCategory
   renderPreview: (entry: any) => string
+  initialData?: any
 }
 
 export function EntryManager({
@@ -28,6 +29,7 @@ export function EntryManager({
   dataKey,
   documentCategory,
   renderPreview,
+  initialData,
 }: EntryManagerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
@@ -38,16 +40,53 @@ export function EntryManager({
   const [currentEntry, setCurrentEntry] = useState<any>(null)
   const [currentEntryIndex, setCurrentEntryIndex] = useState<number | null>(null)
 
+  // Create a ref to track if initialData has been processed
+  const initialDataProcessed = useRef(false);
+
   useEffect(() => {
+    // If we've already processed initialData and it's provided, skip API fetching
+    if (initialData && !initialDataProcessed.current) {
+      setEntries(Array.isArray(initialData) ? initialData : [initialData].filter(Boolean));
+      setIsLoading(false);
+      initialDataProcessed.current = true;
+      return;
+    }
+
+    // Skip the data fetching if initialData was already processed
+    if (initialDataProcessed.current) {
+      return;
+    }
+
+    // Map from dataKey to the corresponding field in the user data
+    const dataKeyToPrismaField: Record<string, string> = {
+      'personalData': 'personal_data',
+      'researchData': 'research_projects',
+      'communityServiceData': 'community_services',
+      'publicationData': 'publications',
+      'intellectualPropData': 'intellectual_props',
+      'recognitionData': 'recognitions'
+    };
+
     const loadEntries = async () => {
       if (!user) return
 
       setIsLoading(true)
       try {
+        // Fetch data from API
         const userData = await getUserData(user.id)
-        if (userData && userData[dataKey]) {
-          setEntries(userData[dataKey])
+        const prismaField = dataKeyToPrismaField[dataKey];
+
+        if (userData && prismaField && userData[prismaField as keyof typeof userData]) {
+          const dataValue = userData[prismaField as keyof typeof userData];
+          if (dataValue) {
+            setEntries(Array.isArray(dataValue) ? dataValue : [dataValue].filter(Boolean))
+          } else {
+            setEntries([])
+          }
+        } else {
+          setEntries([])
         }
+        initialDataProcessed.current = true;
       } catch (error) {
         console.error(`Error loading ${dataKey}:`, error)
         toast({
@@ -55,13 +94,15 @@ export function EntryManager({
           description: `Failed to load ${title.toLowerCase()} data.`,
           variant: "destructive",
         })
+        setEntries([])
       } finally {
         setIsLoading(false)
       }
     }
 
     loadEntries()
-  }, [user, dataKey, title, toast])
+    // Only re-run if these dependencies change AND initialData hasn't been processed
+  }, [user?.id, dataKey])
 
   const handleAddEntry = async (formData: any) => {
     if (!user) return
@@ -74,10 +115,12 @@ export function EntryManager({
         updatedAt: new Date().toISOString(),
       }
 
+      // Update local state first
       const updatedEntries = [...entries, newEntry]
       setEntries(updatedEntries)
+      setIsAddDialogOpen(false) // Close dialog immediately after local update
 
-      // Save to backend
+      // Then save to backend - don't need to update state again
       await saveUserData(user.id, {
         [dataKey]: updatedEntries,
       })
@@ -86,8 +129,6 @@ export function EntryManager({
         title: "Success",
         description: `${title} added successfully.`,
       })
-
-      setIsAddDialogOpen(false)
     } catch (error) {
       console.error(`Error adding ${dataKey}:`, error)
       toast({
@@ -108,12 +149,17 @@ export function EntryManager({
         updatedAt: new Date().toISOString(),
       }
 
+      // Update local state first
       const updatedEntries = [...entries]
       updatedEntries[currentEntryIndex] = updatedEntry
-
       setEntries(updatedEntries)
 
-      // Save to backend
+      // Reset state and close dialog immediately
+      setIsEditDialogOpen(false)
+      setCurrentEntry(null)
+      setCurrentEntryIndex(null)
+
+      // Then save to backend without updating state again
       await saveUserData(user.id, {
         [dataKey]: updatedEntries,
       })
@@ -122,10 +168,6 @@ export function EntryManager({
         title: "Success",
         description: `${title} updated successfully.`,
       })
-
-      setIsEditDialogOpen(false)
-      setCurrentEntry(null)
-      setCurrentEntryIndex(null)
     } catch (error) {
       console.error(`Error updating ${dataKey}:`, error)
       toast({

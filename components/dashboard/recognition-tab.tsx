@@ -2,38 +2,27 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { getUserData } from "@/lib/data-service"
 import { EntryManager } from "@/components/dynamic-form/entry-manager"
 import { recognitionFields } from "./form-schemas"
 import { Loader2 } from "lucide-react"
 
-export function RecognitionTab() {
+interface RecognitionTabProps {
+  userData: any;
+  isLoading: boolean;
+}
+
+export function RecognitionTab({ userData, isLoading }: RecognitionTabProps) {
   const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
   const [recognitionData, setRecognitionData] = useState<any[]>([])
 
   useEffect(() => {
-    const loadRecognitionData = async () => {
-      if (!user) return
-
-      setIsLoading(true)
-      try {
-        const userData = await getUserData(user.id)
-        if (userData && userData.recognitionData) {
-          setRecognitionData(userData.recognitionData)
-        }
-      } catch (error) {
-        console.error("Error loading recognition data:", error)
-      } finally {
-        setIsLoading(false)
-      }
+    if (userData && userData.recognitions) {
+      setRecognitionData(userData.recognitions)
     }
-
-    loadRecognitionData()
-  }, [user])
+  }, [userData])
 
   const renderRecognitionPreview = (entry: any) => {
-    return entry.title
+    return entry.judul
   }
 
   if (isLoading) {
@@ -47,12 +36,13 @@ export function RecognitionTab() {
   return (
     <div className="space-y-6">
       <EntryManager
-        title="Rekognisi"
+        title="Penghargaan"
         description="Masukkan informasi penghargaan dan rekognisi yang telah Anda terima."
         formFields={recognitionFields}
         dataKey="recognitionData"
         documentCategory="recognition"
         renderPreview={renderRecognitionPreview}
+        initialData={recognitionData}
       />
     </div>
   )

@@ -1,39 +1,30 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { getUserData } from "@/lib/data-service"
 import { EntryManager } from "@/components/dynamic-form/entry-manager"
 import { researchFields } from "./form-schemas"
 import { Loader2 } from "lucide-react"
 
-export function ResearchTab() {
+interface ResearchTabProps {
+  userData: any;
+  isLoading: boolean;
+}
+
+export function ResearchTab({ userData, isLoading }: ResearchTabProps) {
   const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
   const [researchData, setResearchData] = useState<any[]>([])
+  const dataProcessed = useRef(false)
 
   useEffect(() => {
-    const loadResearchData = async () => {
-      if (!user) return
-
-      setIsLoading(true)
-      try {
-        const userData = await getUserData(user.id)
-        if (userData && userData.researchData) {
-          setResearchData(userData.researchData)
-        }
-      } catch (error) {
-        console.error("Error loading research data:", error)
-      } finally {
-        setIsLoading(false)
-      }
+    if (userData?.research_projects && !dataProcessed.current) {
+      setResearchData(userData.research_projects)
+      dataProcessed.current = true
     }
-
-    loadResearchData()
-  }, [user])
+  }, [userData])
 
   const renderResearchPreview = (entry: any) => {
-    return entry.title
+    return entry.judul
   }
 
   if (isLoading) {
@@ -53,6 +44,7 @@ export function ResearchTab() {
         dataKey="researchData"
         documentCategory="research"
         renderPreview={renderResearchPreview}
+        initialData={researchData}
       />
     </div>
   )

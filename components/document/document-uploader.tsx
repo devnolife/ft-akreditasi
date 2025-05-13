@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/contexts/AuthContext"
-import { saveDocument } from "@/lib/document-service"
+import { createDocument } from "@/lib/document-service"
 import { useToast } from "@/hooks/use-toast"
 import { Upload, X, FileText, Check } from "lucide-react"
 import type { DocumentCategory } from "@/types/document"
@@ -97,12 +97,11 @@ export function DocumentUploader({
 
         // Create a fake URL for the file
         const fileUrl = URL.createObjectURL(file)
-
         // Save document metadata
-        await saveDocument(user.id, {
+        await createDocument({
           title: title || file.name,
           description,
-          fileUrl,
+          url: fileUrl,
           fileName: file.name,
           fileType: file.type,
           fileSize: file.size,

@@ -1,19 +1,10 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { jwtVerify } from "jose"
 
 // This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-
-  // Get auth token from cookies or storage
-  const authToken = request.cookies.get("auth_token")?.value || request.cookies.get("next-auth.session-token")?.value
-
-  // Check if the path requires authentication
-  const isAuthRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/prodi") ||
-    pathname.startsWith("/forms")
 
   // Public routes that don't require authentication
   const isPublicRoute =
@@ -21,19 +12,89 @@ export function middleware(request: NextRequest) {
     pathname === "/register" ||
     pathname === "/forgot-password" ||
     pathname === "/unauthorized" ||
-    pathname === "/"
+    pathname === "/" ||
+    pathname.startsWith("/api/auth")
 
-  // If it's an auth route and no token exists, redirect to login
-  if (isAuthRoute && !authToken) {
-    // Store the original URL to redirect back after login
+  // Skip middleware for public routes and static files
+  if (isPublicRoute ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/static") ||
+    pathname.startsWith("/images") ||
+    pathname.startsWith("/public")) {
+    return NextResponse.next()
+  }
+
+  // Get auth token from cookies or authorization header
+  const token = request.cookies.get("token")?.value ||
+    request.headers.get("authorization")?.split(" ")[1]
+
+  // Debug cookie information
+  const allCookies = request.cookies.getAll()
+
+  // If no token is found, redirect to login
+  if (!token) {
     const url = new URL("/login", request.url)
-    url.searchParams.set("callbackUrl", encodeURI(request.nextUrl.pathname))
+    url.searchParams.set("callbackUrl", encodeURI(pathname))
     return NextResponse.redirect(url)
   }
 
-  // Let the client-side auth context handle redirections for authenticated users
-  // This prevents redirection loops between login and dashboard
-  return NextResponse.next()
+  // Log the token information (first few chars only for security)
+  if (token) {
+    const tokenPreview = token.substring(0, 15) + "..." // Only display beginning of token
+  }
+
+  try {
+    // Verify the token
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
+
+    try {
+      const { payload } = await jwtVerify(token, secret)
+
+      // Check role-based access
+      const userRole = (payload.role as string)?.toUpperCase()
+
+      // Admin specific routes
+      if (pathname.startsWith("/admin") && userRole !== "ADMIN") {
+        return NextResponse.redirect(new URL("/unauthorized", request.url))
+      }
+
+      // Prodi specific routes
+      if (pathname.startsWith("/prodi") && userRole !== "PRODI") {
+        return NextResponse.redirect(new URL("/unauthorized", request.url))
+      }
+
+      // Lecturer specific routes (allow access to admin, prodi and lecturer)
+      if (pathname.startsWith("/dashboard") && !["LECTURER", "ADMIN", "PRODI"].includes(userRole)) {
+        return NextResponse.redirect(new URL("/unauthorized", request.url))
+      }
+
+      // Clone the request headers and add the user info
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set("x-user-id", payload.userId as string)
+      requestHeaders.set("x-user-role", userRole)
+
+      // Return the request with the modified headers
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
+    } catch (error) {
+
+      // Clear invalid token
+      const response = NextResponse.redirect(new URL("/login", request.url))
+      response.cookies.delete("token")
+
+      return response
+    }
+  } catch (error) {
+
+    // Clear invalid token
+    const response = NextResponse.redirect(new URL("/login", request.url))
+    response.cookies.delete("token")
+
+    return response
+  }
 }
 
 // See "Matching Paths" below to learn more

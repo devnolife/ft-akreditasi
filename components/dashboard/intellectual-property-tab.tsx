@@ -2,38 +2,27 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { getUserData } from "@/lib/data-service"
 import { EntryManager } from "@/components/dynamic-form/entry-manager"
 import { intellectualPropertyFields } from "./form-schemas"
 import { Loader2 } from "lucide-react"
 
-export function IntellectualPropertyTab() {
+interface IntellectualPropertyTabProps {
+  userData: any;
+  isLoading: boolean;
+}
+
+export function IntellectualPropertyTab({ userData, isLoading }: IntellectualPropertyTabProps) {
   const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
-  const [ipData, setIpData] = useState<any[]>([])
+  const [intellectualPropData, setIntellectualPropData] = useState<any[]>([])
 
   useEffect(() => {
-    const loadIpData = async () => {
-      if (!user) return
-
-      setIsLoading(true)
-      try {
-        const userData = await getUserData(user.id)
-        if (userData && userData.intellectualPropertyData) {
-          setIpData(userData.intellectualPropertyData)
-        }
-      } catch (error) {
-        console.error("Error loading intellectual property data:", error)
-      } finally {
-        setIsLoading(false)
-      }
+    if (userData && userData.intellectual_props) {
+      setIntellectualPropData(userData.intellectual_props)
     }
+  }, [userData])
 
-    loadIpData()
-  }, [user])
-
-  const renderIpPreview = (entry: any) => {
-    return entry.title
+  const renderIntellectualPropPreview = (entry: any) => {
+    return entry.judul
   }
 
   if (isLoading) {
@@ -48,11 +37,12 @@ export function IntellectualPropertyTab() {
     <div className="space-y-6">
       <EntryManager
         title="Hak Kekayaan Intelektual"
-        description="Masukkan informasi HAKI yang telah Anda dapatkan."
+        description="Masukkan informasi hak kekayaan intelektual yang telah Anda daftarkan."
         formFields={intellectualPropertyFields}
-        dataKey="intellectualPropertyData"
+        dataKey="intellectualPropData"
         documentCategory="intellectual_property"
-        renderPreview={renderIpPreview}
+        renderPreview={renderIntellectualPropPreview}
+        initialData={intellectualPropData}
       />
     </div>
   )

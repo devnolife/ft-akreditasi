@@ -1,20 +1,26 @@
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { AuthProvider } from "@/contexts/AuthContext"
 import "./globals.css"
+import { ClientProviders } from "@/components/client-providers"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "Lecturer Accreditation Data Tracker",
-  description: "Track and manage lecturer accreditation data",
-    generator: 'v0.dev'
+export const metadata: Metadata = {
+  title: "Sistem Akreditasi Dosen",
+  description: "Sistem Pelacakan Data Akreditasi Dosen Fakultas Teknik Unismuh Makassar",
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   )

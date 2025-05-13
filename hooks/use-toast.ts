@@ -56,7 +56,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, 300)
   }
 
-  return <ToastContext.Provider value={{ toast, toasts, dismiss }}>{children}</ToastContext.Provider>
+  return {
+    children,
+    props: {
+      value: { toast, toasts, dismiss }
+    }
+  };
 }
 
 export function useToast() {
@@ -69,7 +74,7 @@ export function useToast() {
         console.log(`Toast: ${title} - ${description} (${variant})`)
       },
       toasts: [],
-      dismiss: (id: string) => {},
+      dismiss: (id: string) => { },
     }
   }
 

@@ -19,6 +19,7 @@ interface AuthContextType {
   user: AuthUser | null
   isLoading: boolean
   error: string | null
+  isAuthenticated: boolean
   login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>
   logout: () => void
   checkPermission: (permission: string) => boolean
@@ -48,16 +49,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const initAuth = async () => {
       setIsLoading(true)
       try {
-        const currentUser = getCurrentUser()
-        setUser(currentUser)
+        console.log("AuthContext - Initializing auth state")
 
-        // If we have a user, refresh their session
-        if (currentUser) {
-          refreshSession()
+        // Instead of using mock data, call the real API
+        const response = await fetch("/api/auth/user", {
+          credentials: "include",
+        });
+
+        const data = await response.json();
+        console.log("AuthContext - User API response:", {
+          isLoggedIn: data.isLoggedIn,
+          hasUser: !!data.user
+        });
+
+        if (data.isLoggedIn && data.user) {
+          console.log("AuthContext - Setting user from API");
+          setUser(data.user);
+
+          // Try to get token from localStorage if it exists and refresh cookie
+          const storedToken = localStorage.getItem('authToken');
+          if (storedToken) {
+            console.log("AuthContext - Found token in localStorage, refreshing cookie");
+            document.cookie = `token=${storedToken}; path=/; max-age=86400; SameSite=Lax`;
+          }
+        } else {
+          console.log("AuthContext - No authenticated user found");
+          setUser(null);
         }
       } catch (err) {
         console.error("Error initializing auth:", err)
         setError("Failed to initialize authentication")
+        setUser(null)
       } finally {
         setIsLoading(false)
       }
@@ -137,18 +159,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(null)
 
     try {
-      const result = await authenticateUser(username, password, rememberMe)
+      console.log("AuthContext - Starting login process for:", username)
 
-      if (result.success && result.user) {
-        setUser(result.user)
-        updateLastLogin(result.user.id)
+      // Call the API directly instead of using the mock service
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("AuthContext - API login failed:", errorData);
+        setError(errorData.error || "Authentication failed");
+        return false;
+      }
+
+      const data = await response.json();
+      console.log("AuthContext - API login successful, received user data");
+
+      if (data.success && data.user) {
+        // Save the token manually in multiple places for redundancy
+        if (data.token) {
+          console.log("AuthContext - Saving token to storage");
+
+          // 1. Save in localStorage if rememberMe is true
+          if (rememberMe) {
+            localStorage.setItem('authToken', data.token);
+          }
+
+          // 2. Set cookie manually for extra reliability
+          const expires = new Date(Date.now() + 86400 * 1000); // 24 hours
+          document.cookie = `token=${data.token}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+
+          console.log("AuthContext - Token saved successfully");
+        }
+
+        // Update our auth state
+        setUser(data.user);
+        console.log("AuthContext - User state updated with API response");
 
         // Redirect based on role
-        redirectUserBasedOnRole(result.user.role)
-        return true
+        setTimeout(() => {
+          console.log("AuthContext - Redirecting based on role:", data.user.role);
+          redirectUserBasedOnRole(data.user.role);
+        }, 500); // Small delay to ensure state is updated
+
+        return true;
       } else {
-        setError(result.error || "Authentication failed")
-        return false
+        console.error("AuthContext - Invalid API response:", data);
+        setError("Invalid response from authentication service");
+        return false;
       }
     } catch (err) {
       console.error("Login error:", err)
@@ -199,6 +261,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     isLoading,
     error,
+    isAuthenticated: !!user,
     login,
     logout,
     checkPermission,

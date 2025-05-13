@@ -5,7 +5,6 @@ import { z } from "zod"
 // Schema for user update
 const userUpdateSchema = z.object({
   name: z.string().min(2).optional(),
-  nidn: z.string().optional(),
   frontDegree: z.string().optional(),
   backDegree: z.string().optional(),
   role: z.enum(["ADMIN", "LECTURER", "PRODI"]).optional(),
@@ -15,36 +14,38 @@ const userUpdateSchema = z.object({
 // GET handler for fetching a specific user
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const userId = params.id
+    // Get user ID from URL parameters
+    const searchParams = request.nextUrl.searchParams
+    const userId = searchParams.get("userId") || params.id
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        personalData: true,
-        studyProgram: true,
-        researchProjects: {
+        personal_data: true,
+        study_program: true,
+        research_projects: {
           orderBy: {
-            updatedAt: "desc",
+            updated_at: "desc",
           },
         },
-        communityServices: {
+        community_services: {
           orderBy: {
-            updatedAt: "desc",
+            updated_at: "desc",
           },
         },
         publications: {
           orderBy: {
-            updatedAt: "desc",
+            updated_at: "desc",
           },
         },
-        intellectualProps: {
+        intellectual_props: {
           orderBy: {
-            updatedAt: "desc",
+            updated_at: "desc",
           },
         },
         recognitions: {
           orderBy: {
-            updatedAt: "desc",
+            updated_at: "desc",
           },
         },
       },
@@ -64,7 +65,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // PATCH handler for updating a user
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const userId = params.id
+    // Get user ID from URL parameters
+    const searchParams = request.nextUrl.searchParams
+    const userId = searchParams.get("userId") || params.id
+
     const body = await request.json()
 
     // Validate request body
@@ -77,17 +81,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     if (!existingUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    // Check if NIDN is unique if provided
-    if (validatedData.nidn && validatedData.nidn !== existingUser.nidn) {
-      const existingNidn = await prisma.user.findUnique({
-        where: { nidn: validatedData.nidn },
-      })
-
-      if (existingNidn) {
-        return NextResponse.json({ error: "User with this NIDN already exists" }, { status: 400 })
-      }
     }
 
     // Update user
@@ -110,7 +103,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 // DELETE handler for deleting a user
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const userId = params.id
+    // Get user ID from URL parameters
+    const searchParams = request.nextUrl.searchParams
+    const userId = searchParams.get("userId") || params.id
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({

@@ -4,10 +4,9 @@ import { z } from "zod"
 
 // Schema for user creation
 const userCreateSchema = z.object({
-  email: z.string().email(),
+  username: z.string().min(2),
   name: z.string().min(2),
   password: z.string().min(6),
-  nidn: z.string().optional(),
   frontDegree: z.string().optional(),
   backDegree: z.string().optional(),
   role: z.enum(["ADMIN", "LECTURER", "PRODI"]).default("LECTURER"),
@@ -34,8 +33,8 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where: whereClause,
       include: {
-        personalData: true,
-        studyProgram: true,
+        personal_data: true,
+        study_program: true,
       },
     })
 
@@ -54,24 +53,13 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const validatedData = userCreateSchema.parse(body)
 
-    // Check if user with email already exists
+    // Check if user with username already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+      where: { username: validatedData.username },
     })
 
     if (existingUser) {
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
-    }
-
-    // Check if NIDN is unique if provided
-    if (validatedData.nidn) {
-      const existingNidn = await prisma.user.findUnique({
-        where: { nidn: validatedData.nidn },
-      })
-
-      if (existingNidn) {
-        return NextResponse.json({ error: "User with this NIDN already exists" }, { status: 400 })
-      }
+      return NextResponse.json({ error: "User with this username already exists" }, { status: 400 })
     }
 
     // Create user

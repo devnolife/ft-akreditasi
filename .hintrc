@@ -10,6 +10,18 @@
           "text-wrap"
         ]
       }
+    ],
+    "axe/forms": [
+      "default",
+      {
+        "label": "off"
+      }
+    ],
+    "axe/structure": [
+      "default",
+      {
+        "dlitem": "off"
+      }
     ]
   }
 }

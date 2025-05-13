@@ -2,38 +2,27 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { getUserData } from "@/lib/data-service"
 import { EntryManager } from "@/components/dynamic-form/entry-manager"
 import { publicationFields } from "./form-schemas"
 import { Loader2 } from "lucide-react"
 
-export function PublicationsTab() {
+interface PublicationsTabProps {
+  userData: any;
+  isLoading: boolean;
+}
+
+export function PublicationsTab({ userData, isLoading }: PublicationsTabProps) {
   const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
   const [publicationData, setPublicationData] = useState<any[]>([])
 
   useEffect(() => {
-    const loadPublicationData = async () => {
-      if (!user) return
-
-      setIsLoading(true)
-      try {
-        const userData = await getUserData(user.id)
-        if (userData && userData.publicationData) {
-          setPublicationData(userData.publicationData)
-        }
-      } catch (error) {
-        console.error("Error loading publication data:", error)
-      } finally {
-        setIsLoading(false)
-      }
+    if (userData && userData.publications) {
+      setPublicationData(userData.publications)
     }
-
-    loadPublicationData()
-  }, [user])
+  }, [userData])
 
   const renderPublicationPreview = (entry: any) => {
-    return entry.title
+    return entry.judul
   }
 
   if (isLoading) {
@@ -48,11 +37,12 @@ export function PublicationsTab() {
     <div className="space-y-6">
       <EntryManager
         title="Publikasi"
-        description="Masukkan informasi publikasi ilmiah yang telah Anda hasilkan."
+        description="Masukkan informasi publikasi karya ilmiah Anda."
         formFields={publicationFields}
         dataKey="publicationData"
         documentCategory="publication"
         renderPreview={renderPublicationPreview}
+        initialData={publicationData}
       />
     </div>
   )
