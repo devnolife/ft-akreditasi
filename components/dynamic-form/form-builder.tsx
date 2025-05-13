@@ -302,7 +302,7 @@ export function FormBuilder({
                 </Label>
                 <Select
                   onValueChange={(value) => handleSelectChange(field.name, value)}
-                  defaultValue={formData[field.name] ? String(formData[field.name]) : undefined}
+                  value={formData[field.name] ? String(formData[field.name]) : undefined}
                 >
                   <SelectTrigger id={field.name} className={errors[field.name] ? "border-red-500" : ""}>
                     <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />

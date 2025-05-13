@@ -6,6 +6,9 @@ import { jwtVerify } from "jose"
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // DEBUG: Log the current path being accessed
+  console.log(`Middleware processing path: ${pathname}`)
+
   // Public routes that don't require authentication
   const isPublicRoute =
     pathname === "/login" ||
@@ -21,6 +24,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/static") ||
     pathname.startsWith("/images") ||
     pathname.startsWith("/public")) {
+    console.log("Public route or static file - skipping middleware")
     return NextResponse.next()
   }
 
@@ -28,11 +32,9 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value ||
     request.headers.get("authorization")?.split(" ")[1]
 
-  // Debug cookie information
-  const allCookies = request.cookies.getAll()
-
   // If no token is found, redirect to login
   if (!token) {
+    console.log("No token found - redirecting to login")
     const url = new URL("/login", request.url)
     url.searchParams.set("callbackUrl", encodeURI(pathname))
     return NextResponse.redirect(url)
@@ -41,6 +43,7 @@ export async function middleware(request: NextRequest) {
   // Log the token information (first few chars only for security)
   if (token) {
     const tokenPreview = token.substring(0, 15) + "..." // Only display beginning of token
+    console.log(`Found token: ${tokenPreview}`)
   }
 
   try {
@@ -52,26 +55,42 @@ export async function middleware(request: NextRequest) {
 
       // Check role-based access
       const userRole = (payload.role as string)?.toUpperCase()
+      console.log(`Middleware - User authenticated as role: ${userRole}`)
+      console.log(`Middleware - Request path: ${pathname}`)
 
       // Admin specific routes
       if (pathname.startsWith("/admin") && userRole !== "ADMIN") {
+        console.log(`Access denied: ${userRole} cannot access admin route ${pathname}`)
         return NextResponse.redirect(new URL("/unauthorized", request.url))
       }
 
       // Prodi specific routes
       if (pathname.startsWith("/prodi") && userRole !== "PRODI") {
+        console.log(`Access denied: ${userRole} cannot access prodi route ${pathname}`)
         return NextResponse.redirect(new URL("/unauthorized", request.url))
       }
 
       // Lecturer specific routes (allow access to admin, prodi and lecturer)
-      if (pathname.startsWith("/dashboard") && !["LECTURER", "ADMIN", "PRODI"].includes(userRole)) {
-        return NextResponse.redirect(new URL("/unauthorized", request.url))
+      if (pathname.startsWith("/dashboard")) {
+        // Verify our array includes check is working properly
+        console.log(`Checking dashboard access. User role: ${userRole}`)
+        console.log(`Allowed roles include LECTURER: ${"LECTURER" === userRole}`)
+        console.log(`Role array check: ${["LECTURER", "ADMIN", "PRODI"].includes(userRole)}`)
+
+        if (!["LECTURER", "ADMIN", "PRODI"].includes(userRole)) {
+          console.log(`Access denied: ${userRole} cannot access dashboard route ${pathname}`)
+          return NextResponse.redirect(new URL("/unauthorized", request.url))
+        } else {
+          console.log(`Access granted: ${userRole} can access dashboard route ${pathname}`)
+        }
       }
 
       // Clone the request headers and add the user info
       const requestHeaders = new Headers(request.headers)
       requestHeaders.set("x-user-id", payload.userId as string)
       requestHeaders.set("x-user-role", userRole)
+
+      console.log(`Access granted to ${pathname} for user with role ${userRole}`)
 
       // Return the request with the modified headers
       return NextResponse.next({
@@ -80,6 +99,7 @@ export async function middleware(request: NextRequest) {
         },
       })
     } catch (error) {
+      console.log(`Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
 
       // Clear invalid token
       const response = NextResponse.redirect(new URL("/login", request.url))
@@ -88,6 +108,7 @@ export async function middleware(request: NextRequest) {
       return response
     }
   } catch (error) {
+    console.log(`Token processing error: ${error instanceof Error ? error.message : 'Unknown error'}`)
 
     // Clear invalid token
     const response = NextResponse.redirect(new URL("/login", request.url))

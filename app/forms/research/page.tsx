@@ -329,7 +329,7 @@ export default function ResearchDataForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Your Role</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select your role" />
@@ -465,7 +465,7 @@ export default function ResearchDataForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Publication Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select publication status" />
@@ -487,20 +487,20 @@ export default function ResearchDataForm() {
 
                   {(form.watch("publicationStatus") === "published" ||
                     form.watch("publicationStatus") === "accepted") && (
-                    <FormField
-                      control={form.control}
-                      name="journalName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Journal/Conference Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., IEEE Transactions on..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
+                      <FormField
+                        control={form.control}
+                        name="journalName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Journal/Conference Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., IEEE Transactions on..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="flex gap-2">

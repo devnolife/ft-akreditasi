@@ -192,7 +192,9 @@ export function hasPermission(permission: string): boolean {
 export function hasRole(role: string): boolean {
   const user = getCurrentUser()
   if (!user) return false
-  return user.role === role
+
+  // Case-insensitive role comparison to match middleware uppercase with AuthContext lowercase
+  return user.role.toLowerCase() === role.toLowerCase();
 }
 
 /**

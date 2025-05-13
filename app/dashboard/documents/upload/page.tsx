@@ -137,9 +137,8 @@ export default function UploadDocumentPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center ${
-                dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-              }`}
+              className={`border-2 border-dashed rounded-lg p-6 text-center ${dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+                }`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
               onDragLeave={handleDrag}

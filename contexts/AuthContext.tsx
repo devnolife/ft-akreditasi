@@ -115,7 +115,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Redirect user based on their role
   const redirectUserBasedOnRole = (role: string) => {
-    switch (role) {
+    const roleLower = role.toLowerCase();
+    console.log(`Redirecting user based on role: ${role} (normalized to: ${roleLower})`);
+
+    switch (roleLower) {
       case "admin":
         router.push("/admin/dashboard")
         break
@@ -131,26 +134,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkRouteAccess = (path: string, user: AuthUser | null) => {
     if (!user) return
 
+    // Log user role for debugging
+    console.log(`Checking route access for ${path}, user role: ${user.role}`);
+
+    // Get lowercase role for case-insensitive comparisons
+    const userRole = user.role.toLowerCase();
+
     // Admin routes
-    if (path.startsWith("/admin") && user.role !== "admin") {
+    if (path.startsWith("/admin") && userRole !== "admin") {
+      console.log(`Access denied: ${userRole} cannot access admin route ${path}`);
       router.push("/unauthorized")
       return
     }
 
     // Prodi routes
-    if (path.startsWith("/prodi") && user.role !== "prodi" && user.role !== "admin") {
+    if (path.startsWith("/prodi") && userRole !== "prodi" && userRole !== "admin") {
+      console.log(`Access denied: ${userRole} cannot access prodi route ${path}`);
       router.push("/unauthorized")
       return
     }
 
     // Lecturer routes
-    if (path.startsWith("/dashboard") && user.role !== "lecturer" && user.role !== "admin") {
+    if (path.startsWith("/dashboard") && userRole !== "lecturer" && userRole !== "admin") {
       // Allow prodi to access lecturer dashboard for now
-      if (user.role !== "prodi") {
+      if (userRole !== "prodi") {
+        console.log(`Access denied: ${userRole} cannot access dashboard route ${path}`);
         router.push("/unauthorized")
         return
       }
     }
+
+    console.log(`Access granted: ${userRole} can access ${path}`);
   }
 
   // Login function
@@ -177,7 +191,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       const data = await response.json();
-      console.log("AuthContext - API login successful, received user data");
+      console.log("AuthContext - API login successful, received user data:", {
+        role: data.user?.role,
+        username: data.user?.username
+      });
 
       if (data.success && data.user) {
         // Save the token manually in multiple places for redundancy
@@ -196,9 +213,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log("AuthContext - Token saved successfully");
         }
 
-        // Update our auth state
-        setUser(data.user);
-        console.log("AuthContext - User state updated with API response");
+        // Update our auth state - ensure we maintain the proper role case
+        const userWithRole = {
+          ...data.user,
+          // Keep original role case from API
+          role: data.user.role
+        };
+        setUser(userWithRole);
+        console.log("AuthContext - User state updated with role:", userWithRole.role);
 
         // Redirect based on role
         setTimeout(() => {

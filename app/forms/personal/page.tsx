@@ -197,7 +197,7 @@ export default function PersonalDataForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select department" />
@@ -227,7 +227,7 @@ export default function PersonalDataForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Academic Position</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select position" />
@@ -269,7 +269,7 @@ export default function PersonalDataForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Highest Degree</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select degree" />
