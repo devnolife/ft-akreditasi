@@ -1,0 +1,249 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model (Lecturer)
+model user {
+  id                    String              @id @default(cuid())
+  name                  String
+  password              String
+  username                  String             @unique
+  front_degree          String?
+  back_degree           String?
+  role                  Role                @default(LECTURER)
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @updatedAt
+  personal_data         personal_data?
+  research_projects     research_project[]
+  community_services    community_service[]
+  publications          publication[]
+  intellectual_props    intellectual_prop[]
+  recognitions          recognition[]
+  documents             document[]
+  study_program         study_program?       @relation(fields: [study_program_id], references: [id])
+  study_program_id      String?
+}
+
+enum Role {
+  ADMIN
+  LECTURER
+  PRODI
+}
+
+// Personal Data model
+model personal_data {
+  id                    String    @id @default(cuid())
+  tempat_lahir          String?
+  tanggal_lahir         DateTime?
+  jenis_kelamin         String?
+  alamat                String?
+  telepon               String?
+  nomor_pegawai         String?
+  jabatan               String?
+  status_kepegawaian    String?
+  spesialisasi          String?
+  gelar_tertinggi       String?
+  institusi             String?
+  tahun_lulus           Int?
+  biografi              String?   @db.Text
+  url_foto              String?
+  user_id               String    @unique
+  user                  user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+}
+
+// Research Project model
+model research_project {
+  id                    String    @id @default(cuid())
+  judul                 String
+  latar_belakang        String?   @db.Text
+  peran                 String?
+  tanggal_mulai         DateTime
+  tanggal_selesai       DateTime?
+  sedang_berjalan       Boolean   @default(false)
+  sumber_dana           String?
+  jumlah_dana           String?
+  melibatkan_mahasiswa  Boolean   @default(false)
+  jumlah_mahasiswa      String?
+  status_publikasi      String?
+  nama_jurnal          String?
+  fokus                String?
+  skema                String?
+  lokasi               String?
+  status_penetapan     String?
+  ketua_peneliti       String?
+  nidn_ketua          String?
+  tahun_pelaksanaan    Int?
+  tahun_pengajuan_pertama Int?
+  program_hibah        String?
+  kategori_sumber_dana String?
+  negara_sumber_dana   String?
+  user_id              String
+  user                 user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  documents            document[]
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+}
+
+// Community Service model
+model community_service {
+  id                    String    @id @default(cuid())
+  judul                 String
+  deskripsi             String?   @db.Text
+  peran                 String?
+  tanggal_mulai         DateTime
+  tanggal_selesai       DateTime?
+  sedang_berjalan       Boolean   @default(false)
+  lokasi                String?
+  mitra                 String?
+  penerima_manfaat      String?
+  sumber_dana           String?
+  jumlah_dana           String?
+  hasil                 String?   @db.Text
+  user_id               String
+  user                  user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  documents             document[]
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+}
+
+// Publication model
+model publication {
+  id                    String    @id @default(cuid())
+  judul                 String
+  penulis               String
+  jenis_publikasi       String
+  penerbit              String?
+  nama_jurnal           String?
+  volume                String?
+  edisi                 String?
+  halaman               String?
+  tahun                 Int
+  doi                   String?
+  url                   String?
+  abstrak               String?   @db.Text
+  kata_kunci            String?
+  faktor_dampak         String?
+  terindeks             String?
+  jumlah_sitasi         Int?
+  user_id               String
+  user                  user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  documents             document[]
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+}
+
+// Intellectual Property model
+model intellectual_prop {
+  id                    String    @id @default(cuid())
+  judul                 String
+  jenis                 String
+  nomor_pendaftaran     String?
+  tanggal_pendaftaran   DateTime?
+  tanggal_pemberian     DateTime?
+  status                String?
+  penemu                String
+  pemilik               String?
+  deskripsi             String?   @db.Text
+  negara                String?
+  tanggal_berakhir      DateTime?
+  user_id               String
+  user                  user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  documents             document[]
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+}
+
+// Recognition/Award model
+model recognition {
+  id                    String    @id @default(cuid())
+  judul                 String
+  pemberi               String
+  deskripsi             String?   @db.Text
+  tanggal               DateTime
+  tingkat               String?
+  kategori              String?
+  user_id               String
+  user                  user      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  documents             document[]
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+}
+
+// Document model
+model document {
+  id                    String            @id @default(cuid())
+  judul                 String
+  deskripsi             String?           @db.Text
+  nama_file             String
+  ukuran_file           Int
+  tipe_file             String
+  url                   String
+  url_thumbnail         String?
+  kategori              DocumentCategory
+  tag                   String[]
+  versi                 Int               @default(1)
+  user_id               String
+  user                  user              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  research_project      research_project?  @relation(fields: [research_project_id], references: [id])
+  research_project_id   String?
+  community_service     community_service? @relation(fields: [community_service_id], references: [id])
+  community_service_id  String?
+  publication           publication?      @relation(fields: [publication_id], references: [id])
+  publication_id        String?
+  intellectual_prop     intellectual_prop? @relation(fields: [intellectual_prop_id], references: [id])
+  intellectual_prop_id  String?
+  recognition           recognition?      @relation(fields: [recognition_id], references: [id])
+  recognition_id        String?
+  versions              document_version[]
+  created_at            DateTime          @default(now())
+  updated_at            DateTime          @updatedAt
+
+  @@index([user_id])
+  @@index([kategori])
+}
+
+enum DocumentCategory {
+  PERSONAL
+  RESEARCH
+  COMMUNITY_SERVICE
+  PUBLICATION
+  INTELLECTUAL_PROPERTY
+  RECOGNITION
+  OTHER
+}
+
+// Document Version model
+model document_version {
+  id                    String    @id @default(cuid())
+  nomor_versi           Int
+  nama_file             String
+  ukuran_file           Int
+  url                   String
+  deskripsi_perubahan   String?
+  document_id           String
+  document              document  @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  created_at            DateTime  @default(now())
+  created_by            String
+}
+
+// Study Program model
+model study_program {
+  id                    String    @id @default(cuid())
+  nama                  String
+  kode                  String    @unique
+  fakultas              String?
+  departemen            String?
+  users                 user[]
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+}
