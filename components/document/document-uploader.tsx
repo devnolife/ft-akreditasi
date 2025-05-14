@@ -9,9 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/contexts/AuthContext"
-import { createDocument } from "@/lib/document-service"
 import { useToast } from "@/hooks/use-toast"
-import { Upload, X, FileText, Check } from "lucide-react"
+import { Upload, X, FileText, Check, AlertCircle } from "lucide-react"
 import type { DocumentCategory } from "@/types/document"
 
 interface DocumentUploaderProps {
@@ -38,6 +37,7 @@ export function DocumentUploader({
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -82,40 +82,64 @@ export function DocumentUploader({
     setProgress(0)
     setError(null)
     setSuccess(false)
+    setUploadedDocuments([])
 
     try {
-      // For demo purposes, we'll simulate the upload process
-      // In a real app, you would upload to a server or cloud storage
+      const uploadedDocs = []
+
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i]
 
-        // Simulate upload progress
-        for (let p = 0; p <= 100; p += 10) {
-          setProgress(p)
-          await new Promise((resolve) => setTimeout(resolve, 100))
+        // Set upload progress based on current file
+        const progressPerFile = 90 / selectedFiles.length
+        setProgress(Math.round(i * progressPerFile))
+
+        // Create FormData for the upload
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('title', title || file.name)
+        formData.append('category', category)
+
+        if (description) {
+          formData.append('description', description)
         }
 
-        // Create a fake URL for the file
-        const fileUrl = URL.createObjectURL(file)
-        // Save document metadata
-        await createDocument({
-          title: title || file.name,
-          description,
-          url: fileUrl,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          category,
-          tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
-          relatedItemId,
-          userId: user.id,
+        if (relatedItemId) {
+          formData.append('relatedItemId', relatedItemId)
+        }
+
+        // Process tags if provided
+        if (tags) {
+          const tagArray = tags.split(',').map(tag => tag.trim())
+          formData.append('tags', JSON.stringify(tagArray))
+        }
+
+        // Upload file to server using the MinIO upload API
+        const response = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
         })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || `Upload failed with status ${response.status}`)
+        }
+
+        const result = await response.json()
+        uploadedDocs.push(result)
+
+        // Update progress
+        setProgress(Math.round((i + 1) * progressPerFile))
       }
 
+      // Final progress
+      setProgress(100)
+      setUploadedDocuments(uploadedDocs)
       setSuccess(true)
+
       toast({
         title: "Success",
-        description: `${selectedFiles.length} document(s) uploaded successfully.`,
+        description: `${uploadedDocs.length} document(s) uploaded successfully.`,
       })
 
       // Reset form
@@ -130,10 +154,12 @@ export function DocumentUploader({
       }
     } catch (error) {
       console.error("Error uploading document:", error)
-      setError("Failed to upload document. Please try again.")
+      setError(error instanceof Error ? error.message : "Failed to upload document. Please try again.")
+      setProgress(0)
+
       toast({
         title: "Error",
-        description: "Failed to upload document. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload document. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -148,6 +174,7 @@ export function DocumentUploader({
     setTags("")
     setError(null)
     setSuccess(false)
+    setUploadedDocuments([])
   }
 
   return (
@@ -244,20 +271,25 @@ export function DocumentUploader({
             </div>
           )}
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && (
+            <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded">
+              <AlertCircle className="h-5 w-5" />
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
 
           {success && (
-            <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-2 rounded">
-              <Check className="h-4 w-4" />
-              <p className="text-sm">Document uploaded successfully!</p>
+            <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded">
+              <Check className="h-5 w-5" />
+              <p className="text-sm">Documents uploaded successfully!</p>
             </div>
           )}
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={handleCancel} disabled={uploading}>
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={uploading}>
               Cancel
             </Button>
-            <Button onClick={handleUpload} disabled={uploading || selectedFiles.length === 0}>
+            <Button type="button" onClick={handleUpload} disabled={uploading || selectedFiles.length === 0}>
               {uploading ? "Uploading..." : "Upload"}
             </Button>
           </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { uploadDocument, updateDocument } from "@/lib/document-service"
+import { updateDocument } from "@/lib/document-service"
 import type { Document, DocumentMetadata } from "@/types/document"
 
 export type UploadStatus = "idle" | "uploading" | "success" | "error"
@@ -24,29 +24,63 @@ export function useDocumentUpload({ category, userId, onSuccess, onError }: UseD
       setStatus("uploading")
       setProgress(0)
 
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          const newProgress = prev + Math.random() * 10
-          return newProgress >= 95 ? 95 : newProgress
-        })
-      }, 300)
+      // Create FormData for the upload
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('title', metadata.title || file.name)
+      formData.append('category', category)
 
-      // Upload the document
-      const uploadedDoc = await uploadDocument({
-        file,
-        metadata: {
-          ...metadata,
-          category,
-          userId,
-          uploadDate: new Date().toISOString(),
-          fileSize: file.size,
-          fileType: file.type,
-          fileName: file.name,
-        },
+      if (metadata.description) {
+        formData.append('description', metadata.description)
+      }
+
+      if (metadata.tags && metadata.tags.length > 0) {
+        formData.append('tags', JSON.stringify(metadata.tags))
+      }
+
+      if (metadata.relatedItemId) {
+        formData.append('relatedItemId', metadata.relatedItemId)
+      }
+
+      // Upload using the API endpoint
+      const xhr = new XMLHttpRequest()
+
+      // Progress tracking
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 100
+          setProgress(percentComplete)
+        }
       })
 
-      clearInterval(progressInterval)
+      // Promise-based XHR request
+      const uploadPromise = new Promise<Document>((resolve, reject) => {
+        xhr.open('POST', '/api/documents/upload')
+
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const uploadedDoc = JSON.parse(xhr.responseText)
+            resolve(uploadedDoc)
+          } else {
+            let errorMessage = 'Upload failed'
+            try {
+              const errorResponse = JSON.parse(xhr.responseText)
+              errorMessage = errorResponse.error || errorMessage
+            } catch (e) { }
+            reject(new Error(errorMessage))
+          }
+        }
+
+        xhr.onerror = function () {
+          reject(new Error('Network error occurred during upload'))
+        }
+
+        xhr.send(formData)
+      })
+
+      // Wait for upload to complete
+      const uploadedDoc = await uploadPromise
+
       setProgress(100)
       setStatus("success")
       setDocument(uploadedDoc)

@@ -147,10 +147,12 @@ export function FormBuilder({
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0]
-    if (file) {
-      // Create a preview
+    if (!file) return
+
+    try {
+      // Create a preview immediately for better UX
       const reader = new FileReader()
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string
@@ -158,15 +160,40 @@ export function FormBuilder({
           ...prev,
           [fieldName]: imageUrl,
         }))
-
-        // In a real app, you would upload the file to your server here
-        // and get back a URL to store in formData
-        setFormData((prev: any) => ({
-          ...prev,
-          [fieldName]: imageUrl,
-        }))
       }
       reader.readAsDataURL(file)
+
+      // Upload the file to the server using MinIO
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', 'personal')
+      formData.append('title', file.name)
+
+      // Show loading state for this field
+      setIsSubmitting(true)
+
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image')
+      }
+
+      const result = await response.json()
+
+      // Store the URL from the server response
+      setFormData((prev: any) => ({
+        ...prev,
+        [fieldName]: result.url,
+      }))
+
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      // Show error in toast or notification
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
