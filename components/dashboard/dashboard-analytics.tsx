@@ -34,37 +34,37 @@ export function DashboardAnalytics({ userId }: DashboardAnalyticsProps) {
           {
             title: "Penelitian",
             value: userData.research_projects?.length || 0,
-            icon: <GraduationCap className="h-6 w-6 text-blue-500" />,
+            icon: <GraduationCap className="h-5 w-5 text-blue-500" />,
             description: "Total penelitian yang telah dilakukan"
           },
           {
             title: "Pengabdian",
             value: userData.community_services?.length || 0,
-            icon: <HandHeart className="h-6 w-6 text-green-500" />,
+            icon: <HandHeart className="h-5 w-5 text-green-500" />,
             description: "Total pengabdian masyarakat"
           },
           {
             title: "Publikasi",
             value: userData.publications?.length || 0,
-            icon: <BookOpen className="h-6 w-6 text-purple-500" />,
+            icon: <BookOpen className="h-5 w-5 text-purple-500" />,
             description: "Total publikasi ilmiah"
           },
           {
             title: "HAKI",
             value: userData.intellectual_props?.length || 0,
-            icon: <LightbulbIcon className="h-6 w-6 text-amber-500" />,
+            icon: <LightbulbIcon className="h-5 w-5 text-amber-500" />,
             description: "Total Hak Kekayaan Intelektual"
           },
           {
             title: "Rekognisi",
             value: userData.recognitions?.length || 0,
-            icon: <Medal className="h-6 w-6 text-red-500" />,
+            icon: <Medal className="h-5 w-5 text-red-500" />,
             description: "Total penghargaan dan rekognisi"
           },
           {
             title: "Dokumen",
             value: userData.documents?.length || 0,
-            icon: <FileText className="h-6 w-6 text-gray-500" />,
+            icon: <FileText className="h-5 w-5 text-gray-500" />,
             description: "Total dokumen yang diunggah"
           }
         ]
@@ -84,15 +84,15 @@ export function DashboardAnalytics({ userId }: DashboardAnalyticsProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[...Array(6)].map((_, index) => (
           <Card key={index} className="animate-pulse">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl h-6 bg-gray-200 rounded-md"></CardTitle>
+            <CardHeader className="pb-1 px-3 py-2">
+              <CardTitle className="text-base h-5 bg-gray-200 rounded-md"></CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold h-8 w-12 bg-gray-200 rounded-md"></div>
-              <p className="text-xs text-muted-foreground mt-2 h-4 w-32 bg-gray-200 rounded-md"></p>
+            <CardContent className="px-3 py-2">
+              <div className="text-2xl font-bold h-6 w-10 bg-gray-200 rounded-md"></div>
+              <p className="text-xs text-muted-foreground mt-1 h-3 w-28 bg-gray-200 rounded-md"></p>
             </CardContent>
           </Card>
         ))}
@@ -101,16 +101,16 @@ export function DashboardAnalytics({ userId }: DashboardAnalyticsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {metrics.map((metric, index) => (
-        <Card key={index}>
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xl font-medium">{metric.title}</CardTitle>
+        <Card key={index} className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-1 px-3 py-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base font-medium">{metric.title}</CardTitle>
             {metric.icon}
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{metric.value}</div>
-            <p className="text-xs text-muted-foreground mt-2">{metric.description}</p>
+          <CardContent className="px-3 py-2">
+            <div className="text-2xl font-bold">{metric.value}</div>
+            <p className="text-xs text-muted-foreground mt-1">{metric.description}</p>
           </CardContent>
         </Card>
       ))}

@@ -75,12 +75,12 @@ export function DocumentCard({ document, onView, onDelete, onVersionHistory }: D
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 px-3 py-2">
         <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             {getFileIcon()}
             <div>
-              <CardTitle className="text-base truncate max-w-[200px]">
+              <CardTitle className="text-sm truncate max-w-[180px]">
                 {document.metadata.title || document.metadata.fileName}
               </CardTitle>
               <p className="text-xs text-muted-foreground">{formatFileSize(document.metadata.fileSize)}</p>
@@ -88,18 +88,18 @@ export function DocumentCard({ document, onView, onDelete, onVersionHistory }: D
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pb-2">
+      <CardContent className="pb-1 px-3 py-2">
         {document.metadata.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{document.metadata.description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2">{document.metadata.description}</p>
         )}
-        <div className="mt-2">
+        <div className="mt-1">
           <p className="text-xs text-muted-foreground">
             Uploaded {formatDistanceToNow(new Date(document.metadata.uploadDate), { addSuffix: true })}
           </p>
           {document.metadata.tags && document.metadata.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {document.metadata.tags.map((tag) => (
-                <span key={tag} className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+                <span key={tag} className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full">
                   {tag}
                 </span>
               ))}
@@ -107,20 +107,20 @@ export function DocumentCard({ document, onView, onDelete, onVersionHistory }: D
           )}
         </div>
       </CardContent>
-      <CardFooter className="pt-2">
+      <CardFooter className="pt-1 px-3 py-2">
         <div className="flex justify-between w-full">
-          <Button variant="outline" size="sm" onClick={() => onView && onView(document)}>
-            <Eye className="h-4 w-4 mr-1" />
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onView && onView(document)}>
+            <Eye className="h-3 w-3 mr-1" />
             View
           </Button>
           <div className="flex space-x-1">
-            <Button variant="outline" size="sm" onClick={handleDownload}>
-              <Download className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={handleDownload}>
+              <Download className="h-3 w-3" />
               <span className="sr-only">Download</span>
             </Button>
             {onVersionHistory && (
-              <Button variant="outline" size="sm" onClick={() => onVersionHistory(document)}>
-                <History className="h-4 w-4" />
+              <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => onVersionHistory(document)}>
+                <History className="h-3 w-3" />
                 <span className="sr-only">Version History</span>
               </Button>
             )}
@@ -129,9 +129,9 @@ export function DocumentCard({ document, onView, onDelete, onVersionHistory }: D
               size="sm"
               onClick={handleDelete}
               disabled={isDeleting}
-              className="text-destructive hover:text-destructive"
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3 w-3" />
               <span className="sr-only">Delete</span>
             </Button>
           </div>

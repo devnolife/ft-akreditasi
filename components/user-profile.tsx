@@ -1,17 +1,22 @@
 "use client"
 
-export function UserProfile({ user, personalData }) {
+interface UserProfileProps {
+  user: any;
+  personalData: any;
+}
+
+export function UserProfile({ user, personalData }: UserProfileProps) {
   const getInitials = () => {
-    if (personalData?.fullName) {
-      return personalData.fullName
+    if (personalData?.nama) {
+      return personalData.nama
         .split(" ")
-        .map((name) => name[0])
+        .map((name: string) => name[0])
         .join("")
     }
     if (user?.name) {
       return user.name
         .split(" ")
-        .map((name) => name[0])
+        .map((name: string) => name[0])
         .join("")
     }
     return "U"
@@ -26,12 +31,16 @@ export function UserProfile({ user, personalData }) {
           </div>
 
           <div className="text-center md:text-left">
-            <h2 className="text-2xl font-bold text-slate-800">{personalData?.fullName || user?.name || "User"}</h2>
+            <h2 className="text-2xl font-bold text-slate-800">
+              {personalData?.front_degree ? `${personalData.front_degree} ` : ""}
+              {personalData?.nama || user?.name || "Pengguna"}
+              {personalData?.back_degree ? ` ${personalData.back_degree}` : ""}
+            </h2>
             <p className="text-slate-600 mt-1">
-              {personalData?.position || "Position"} - {personalData?.department || "Department"}
+              {personalData?.jabatan || "Jabatan"} - {personalData?.spesialisasi || "Departemen"}
             </p>
             <p className="text-sm mt-2 text-slate-500">
-              {personalData?.email || user?.email || "email@example.com"} • {personalData?.phone || "Phone"}
+              {user?.username || "email@contoh.com"} • {personalData?.telepon || "Telepon"}
             </p>
           </div>
         </div>
@@ -39,51 +48,51 @@ export function UserProfile({ user, personalData }) {
 
       <div className="grid gap-6 p-6 md:grid-cols-2">
         <div className="bg-slate-50 p-4 rounded-lg">
-          <h3 className="font-medium mb-3 text-slate-700">Academic Information</h3>
+          <h3 className="font-medium mb-3 text-slate-700">Informasi Akademik</h3>
           <dl className="space-y-2">
             <div className="grid grid-cols-2">
-              <dt className="text-slate-500">Position:</dt>
-              <dd className="font-medium">{personalData?.position || "-"}</dd>
+              <dt className="text-slate-500">Jabatan:</dt>
+              <dd className="font-medium">{personalData?.jabatan || "-"}</dd>
             </div>
             <div className="grid grid-cols-2">
-              <dt className="text-slate-500">Department:</dt>
-              <dd className="font-medium">{personalData?.department || "-"}</dd>
+              <dt className="text-slate-500">Status:</dt>
+              <dd className="font-medium">{personalData?.status_kepegawaian || "-"}</dd>
             </div>
             <div className="grid grid-cols-2">
-              <dt className="text-slate-500">Specialization:</dt>
-              <dd className="font-medium">{personalData?.specialization || "-"}</dd>
+              <dt className="text-slate-500">Bidang Keahlian:</dt>
+              <dd className="font-medium">{personalData?.spesialisasi || "-"}</dd>
             </div>
             <div className="grid grid-cols-2">
-              <dt className="text-slate-500">Highest Degree:</dt>
-              <dd className="font-medium">{personalData?.highestDegree || "-"}</dd>
+              <dt className="text-slate-500">Gelar Tertinggi:</dt>
+              <dd className="font-medium">{personalData?.gelar_tertinggi || "-"}</dd>
             </div>
           </dl>
         </div>
 
         <div className="bg-slate-50 p-4 rounded-lg">
-          <h3 className="font-medium mb-3 text-slate-700">Contact Information</h3>
+          <h3 className="font-medium mb-3 text-slate-700">Informasi Kontak</h3>
           <dl className="space-y-2">
             <div className="grid grid-cols-2">
               <dt className="text-slate-500">Email:</dt>
-              <dd className="font-medium">{personalData?.email || user?.email || "-"}</dd>
+              <dd className="font-medium">{user?.username || "-"}</dd>
             </div>
             <div className="grid grid-cols-2">
-              <dt className="text-slate-500">Phone:</dt>
-              <dd className="font-medium">{personalData?.phone || "-"}</dd>
+              <dt className="text-slate-500">Telepon:</dt>
+              <dd className="font-medium">{personalData?.telepon || "-"}</dd>
             </div>
             <div className="grid grid-cols-2">
-              <dt className="text-slate-500">Employee ID:</dt>
-              <dd className="font-medium">{personalData?.employeeId || "-"}</dd>
+              <dt className="text-slate-500">NIP/NIDN:</dt>
+              <dd className="font-medium">{personalData?.nomor_pegawai || "-"}</dd>
             </div>
           </dl>
         </div>
       </div>
 
-      {personalData?.bio && (
+      {personalData?.biografi && (
         <div className="px-6 pb-6">
           <div className="bg-slate-50 p-4 rounded-lg">
-            <h3 className="font-medium mb-2 text-slate-700">Biography</h3>
-            <p className="text-slate-600">{personalData.bio}</p>
+            <h3 className="font-medium mb-2 text-slate-700">Biografi</h3>
+            <p className="text-slate-600">{personalData.biografi}</p>
           </div>
         </div>
       )}

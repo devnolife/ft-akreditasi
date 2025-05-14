@@ -19,7 +19,12 @@ interface EntryManagerProps {
   dataKey: string
   documentCategory: DocumentCategory
   renderPreview: (entry: any) => string
+  renderCard?: (entry: any) => React.ReactNode
   initialData?: any
+  disableAdd?: boolean
+  onAdd?: (data: any) => Promise<any>
+  onEdit?: (data: any) => Promise<any>
+  onDelete?: (id: string) => Promise<void>
 }
 
 export function EntryManager({
@@ -29,7 +34,12 @@ export function EntryManager({
   dataKey,
   documentCategory,
   renderPreview,
+  renderCard,
   initialData,
+  disableAdd = false,
+  onAdd,
+  onEdit,
+  onDelete,
 }: EntryManagerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
@@ -115,15 +125,23 @@ export function EntryManager({
         updatedAt: new Date().toISOString(),
       }
 
-      // Update local state first
-      const updatedEntries = [...entries, newEntry]
-      setEntries(updatedEntries)
-      setIsAddDialogOpen(false) // Close dialog immediately after local update
+      // If there's a custom onAdd handler, use it
+      if (onAdd) {
+        const result = await onAdd(formData);
+        // Update local state with the result from the API
+        setEntries([result, ...entries]);
+      } else {
+        // Default behavior with local state
+        const updatedEntries = [...entries, newEntry]
+        setEntries(updatedEntries)
 
-      // Then save to backend - don't need to update state again
-      await saveUserData(user.id, {
-        [dataKey]: updatedEntries,
-      })
+        // Then save to backend - don't need to update state again
+        await saveUserData(user.id, {
+          [dataKey]: updatedEntries,
+        })
+      }
+
+      setIsAddDialogOpen(false) // Close dialog immediately after update
 
       toast({
         title: "Success",
@@ -143,26 +161,40 @@ export function EntryManager({
     if (!user || currentEntryIndex === null) return
 
     try {
-      const updatedEntry = {
-        ...entries[currentEntryIndex],
-        ...formData,
-        updatedAt: new Date().toISOString(),
-      }
+      // If there's a custom onEdit handler, use it
+      if (onEdit && currentEntry?.id) {
+        const result = await onEdit({
+          id: currentEntry.id,
+          ...formData
+        });
 
-      // Update local state first
-      const updatedEntries = [...entries]
-      updatedEntries[currentEntryIndex] = updatedEntry
-      setEntries(updatedEntries)
+        // Update local state with the result from the API
+        setEntries(entries.map(entry =>
+          entry.id === result.id ? result : entry
+        ));
+      } else {
+        // Default behavior with local state
+        const updatedEntry = {
+          ...entries[currentEntryIndex],
+          ...formData,
+          updatedAt: new Date().toISOString(),
+        }
+
+        // Update local state first
+        const updatedEntries = [...entries]
+        updatedEntries[currentEntryIndex] = updatedEntry
+        setEntries(updatedEntries)
+
+        // Then save to backend without updating state again
+        await saveUserData(user.id, {
+          [dataKey]: updatedEntries,
+        })
+      }
 
       // Reset state and close dialog immediately
       setIsEditDialogOpen(false)
       setCurrentEntry(null)
       setCurrentEntryIndex(null)
-
-      // Then save to backend without updating state again
-      await saveUserData(user.id, {
-        [dataKey]: updatedEntries,
-      })
 
       toast({
         title: "Success",
@@ -186,15 +218,24 @@ export function EntryManager({
     }
 
     try {
-      const updatedEntries = [...entries]
-      updatedEntries.splice(index, 1)
+      const entryToDelete = entries[index];
 
-      setEntries(updatedEntries)
+      // If there's a custom onDelete handler, use it
+      if (onDelete && entryToDelete?.id) {
+        await onDelete(entryToDelete.id);
+        // Update local state to remove the deleted entry
+        setEntries(entries.filter(entry => entry.id !== entryToDelete.id));
+      } else {
+        // Default behavior with local state
+        const updatedEntries = [...entries]
+        updatedEntries.splice(index, 1)
+        setEntries(updatedEntries)
 
-      // Save to backend
-      await saveUserData(user.id, {
-        [dataKey]: updatedEntries,
-      })
+        // Save to backend
+        await saveUserData(user.id, {
+          [dataKey]: updatedEntries,
+        })
+      }
 
       toast({
         title: "Success",
@@ -232,26 +273,28 @@ export function EntryManager({
           <p className="text-muted-foreground">{description}</p>
         </div>
 
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-teal-600 hover:bg-teal-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah {title}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Tambah {title} Baru</DialogTitle>
-            </DialogHeader>
-            <FormBuilder
-              fields={formFields}
-              onSubmit={handleAddEntry}
-              documentCategory={documentCategory}
-              relatedItemId={user?.id}
-              submitLabel="Simpan"
-            />
-          </DialogContent>
-        </Dialog>
+        {!disableAdd && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-teal-600 hover:bg-teal-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Tambah {title}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Tambah {title} Baru</DialogTitle>
+              </DialogHeader>
+              <FormBuilder
+                fields={formFields}
+                onSubmit={handleAddEntry}
+                documentCategory={documentCategory}
+                relatedItemId={user?.id}
+                submitLabel="Simpan"
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {isLoading ? (
@@ -260,58 +303,63 @@ export function EntryManager({
         </div>
       ) : entries.length === 0 ? (
         <Card className="bg-slate-50 border border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="rounded-full bg-slate-100 p-3 mb-4">
-              <FileText className="h-6 w-6 text-slate-400" />
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <div className="rounded-full bg-slate-100 p-2 mb-3">
+              <FileText className="h-5 w-5 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-700">Belum ada {title.toLowerCase()}</h3>
-            <p className="text-slate-500 text-center max-w-md mt-1">
-              Klik tombol "Tambah {title}" untuk menambahkan {title.toLowerCase()} baru.
+            <h3 className="text-base font-medium text-slate-700">Belum ada {title.toLowerCase()}</h3>
+            <p className="text-sm text-slate-500 text-center max-w-md mt-1">
+              {disableAdd
+                ? `Silakan hubungi administrator jika Anda perlu menambahkan ${title.toLowerCase()}.`
+                : `Klik tombol "Tambah ${title}" untuk menambahkan ${title.toLowerCase()} baru.`
+              }
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {entries.map((entry, index) => (
-            <Card key={entry.id || index} className="overflow-hidden hover:shadow-md transition-shadow">
-              {imageFieldName && entry[imageFieldName] && (
-                <div className="aspect-video relative">
-                  <Image
-                    src={entry[imageFieldName] || "/placeholder.svg"}
-                    alt={renderPreview(entry)}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
-              <CardHeader className={imageFieldName && entry[imageFieldName] ? "pt-4 pb-2" : ""}>
-                <CardTitle className="text-lg line-clamp-2">{renderPreview(entry)}</CardTitle>
-                {entry.createdAt && (
-                  <CardDescription>
-                    {new Date(entry.createdAt).toLocaleDateString("id-ID", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </CardDescription>
+            renderCard ? renderCard(entry) : (
+              <Card key={entry.id || index} className="overflow-hidden hover:shadow-md transition-shadow">
+                {imageFieldName && entry[imageFieldName] && (
+                  <div className="aspect-video relative">
+                    <Image
+                      src={entry[imageFieldName] || "/placeholder.svg"}
+                      alt={renderPreview(entry)}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                 )}
-              </CardHeader>
-              <CardFooter className="flex justify-end gap-2 pt-2 pb-4">
-                <Button variant="outline" size="sm" onClick={() => openEditDialog(entry, index)}>
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => handleDeleteEntry(index)}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Hapus
-                </Button>
-              </CardFooter>
-            </Card>
+                <CardHeader className={imageFieldName && entry[imageFieldName] ? "pt-3 pb-1 px-3" : "p-3 pb-1"}>
+                  <CardTitle className="text-base line-clamp-2">{renderPreview(entry)}</CardTitle>
+                  {entry.createdAt && (
+                    <CardDescription className="text-xs">
+                      {new Date(entry.createdAt).toLocaleDateString("id-ID", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardFooter className="flex justify-end gap-2 pt-1 pb-3 px-3">
+                  <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => openEditDialog(entry, index)}>
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteEntry(index)}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Hapus
+                  </Button>
+                </CardFooter>
+              </Card>
+            )
           ))}
         </div>
       )}

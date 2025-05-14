@@ -252,3 +252,51 @@ export async function deleteResearchProject(projectId: string) {
     throw new Error("Failed to delete research project")
   }
 }
+
+// Add these functions to handle personal data operations
+
+// Get personal data for a specific user
+export async function getPersonalData(userId: string) {
+  try {
+    const response = await fetch(`/api/users/personal-data?userId=${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch personal data')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching personal data:', error)
+    throw error
+  }
+}
+
+// Save or update personal data for a specific user
+export async function savePersonalData(userId: string, data: any) {
+  try {
+    const response = await fetch('/api/users/personal-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        data,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to save personal data')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error saving personal data:', error)
+    throw error
+  }
+}

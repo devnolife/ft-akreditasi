@@ -14,19 +14,18 @@ interface StatCardProps {
 export function StatCard({ title, value, description, icon, trend, trendValue }: StatCardProps) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row items-center justify-between pb-1">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon && <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">{icon}</div>}
+        {icon && <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">{icon}</div>}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-xl font-bold">{value}</div>
         <div className="flex items-center justify-between">
-          {description && <CardDescription>{description}</CardDescription>}
+          {description && <CardDescription className="text-xs">{description}</CardDescription>}
           {trend && (
             <div
-              className={`flex items-center text-xs font-medium ${
-                trend === "up" ? "text-green-600" : trend === "down" ? "text-red-600" : "text-gray-500"
-              }`}
+              className={`flex items-center text-xs font-medium ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-600" : "text-gray-500"
+                }`}
             >
               {trend === "up" ? (
                 <ArrowUpIcon className="h-3 w-3 mr-1" />

@@ -75,7 +75,7 @@ export function FormBuilder({
 
     // Convert number inputs to numbers
     if (type === "number") {
-      parsedValue = value === "" ? "" : Number(value)
+      parsedValue = value === "" ? "" : Number(value).toString()
     }
 
     setFormData((prev: any) => ({
@@ -94,10 +94,16 @@ export function FormBuilder({
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData((prev: any) => {
+      // Only update if the value actually changed
+      if (prev[name] === value) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
 
     // Clear error for this field if it exists
     if (errors[name]) {
@@ -146,7 +152,7 @@ export function FormBuilder({
 
         // In a real app, you would upload the file to your server here
         // and get back a URL to store in formData
-        setFormData((prev) => ({
+        setFormData((prev: any) => ({
           ...prev,
           [fieldName]: imageUrl,
         }))
@@ -302,7 +308,8 @@ export function FormBuilder({
                 </Label>
                 <Select
                   onValueChange={(value) => handleSelectChange(field.name, value)}
-                  value={formData[field.name] ? String(formData[field.name]) : undefined}
+                  value={formData[field.name] || ""}
+                  defaultValue={formData[field.name] || ""}
                 >
                   <SelectTrigger id={field.name} className={errors[field.name] ? "border-red-500" : ""}>
                     <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
@@ -344,10 +351,8 @@ export function FormBuilder({
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </Label>
                 <DatePicker
-                  id={field.name}
-                  date={formData[field.name] ? new Date(formData[field.name]) : null}
-                  setDate={(date) => handleDateChange(field.name, date)}
-                  className={errors[field.name] ? "border-red-500" : ""}
+                  date={formData[field.name] ? new Date(formData[field.name]) : undefined}
+                  setDate={(date) => handleDateChange(field.name, date as Date | null)}
                 />
                 {errors[field.name] && <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>}
               </div>

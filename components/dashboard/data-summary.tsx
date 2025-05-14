@@ -67,8 +67,8 @@ export function DataSummary() {
       data.publicationData && Array.isArray(data.publicationData) && data.publicationData.length > 0 ? 100 : 0
     const intellectualPropertyDataRate =
       data.intellectualPropertyData &&
-      Array.isArray(data.intellectualPropertyData) &&
-      data.intellectualPropertyData.length > 0
+        Array.isArray(data.intellectualPropertyData) &&
+        data.intellectualPropertyData.length > 0
         ? 100
         : 0
     const recognitionDataRate =
@@ -82,7 +82,7 @@ export function DataSummary() {
         publicationDataRate +
         intellectualPropertyDataRate +
         recognitionDataRate) /
-        6,
+      6,
     )
 
     setCompletionRates({
@@ -102,84 +102,86 @@ export function DataSummary() {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Ringkasan Data</CardTitle>
-        <CardDescription>Progres pengisian data akademik Anda</CardDescription>
+      <CardHeader className="pb-2 px-3 py-2">
+        <CardTitle className="text-base">Ringkasan Data</CardTitle>
+        <CardDescription className="text-xs">Progres pengisian data akademik Anda</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-blue-500" />
-              <span>Data Diri</span>
+      <CardContent className="space-y-2 px-3 py-2">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs items-center">
+              <div className="flex items-center gap-1">
+                <User className="h-3 w-3 text-blue-500" />
+                <span>Data Diri</span>
+              </div>
+              <span className="font-medium">{completionRates.personalData}%</span>
             </div>
-            <span className="font-medium">{completionRates.personalData}%</span>
+            <Progress value={completionRates.personalData} className="h-1.5" />
           </div>
-          <Progress value={completionRates.personalData} className="h-2" />
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-emerald-500" />
-              <span>Penelitian</span>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs items-center">
+              <div className="flex items-center gap-1">
+                <GraduationCap className="h-3 w-3 text-emerald-500" />
+                <span>Penelitian</span>
+              </div>
+              <span className="font-medium">{completionRates.researchData}%</span>
             </div>
-            <span className="font-medium">{completionRates.researchData}%</span>
+            <Progress value={completionRates.researchData} className="h-1.5" />
           </div>
-          <Progress value={completionRates.researchData} className="h-2" />
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <HandHeart className="h-4 w-4 text-rose-500" />
-              <span>Pengabdian</span>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs items-center">
+              <div className="flex items-center gap-1">
+                <HandHeart className="h-3 w-3 text-rose-500" />
+                <span>Pengabdian</span>
+              </div>
+              <span className="font-medium">{completionRates.communityServiceData}%</span>
             </div>
-            <span className="font-medium">{completionRates.communityServiceData}%</span>
+            <Progress value={completionRates.communityServiceData} className="h-1.5" />
           </div>
-          <Progress value={completionRates.communityServiceData} className="h-2" />
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-amber-500" />
-              <span>Publikasi</span>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs items-center">
+              <div className="flex items-center gap-1">
+                <BookOpen className="h-3 w-3 text-amber-500" />
+                <span>Publikasi</span>
+              </div>
+              <span className="font-medium">{completionRates.publicationData}%</span>
             </div>
-            <span className="font-medium">{completionRates.publicationData}%</span>
+            <Progress value={completionRates.publicationData} className="h-1.5" />
           </div>
-          <Progress value={completionRates.publicationData} className="h-2" />
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <LightbulbIcon className="h-4 w-4 text-purple-500" />
-              <span>HAKI</span>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs items-center">
+              <div className="flex items-center gap-1">
+                <LightbulbIcon className="h-3 w-3 text-purple-500" />
+                <span>HAKI</span>
+              </div>
+              <span className="font-medium">{completionRates.intellectualPropertyData}%</span>
             </div>
-            <span className="font-medium">{completionRates.intellectualPropertyData}%</span>
+            <Progress value={completionRates.intellectualPropertyData} className="h-1.5" />
           </div>
-          <Progress value={completionRates.intellectualPropertyData} className="h-2" />
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Medal className="h-4 w-4 text-cyan-500" />
-              <span>Rekognisi</span>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs items-center">
+              <div className="flex items-center gap-1">
+                <Medal className="h-3 w-3 text-cyan-500" />
+                <span>Rekognisi</span>
+              </div>
+              <span className="font-medium">{completionRates.recognitionData}%</span>
             </div>
-            <span className="font-medium">{completionRates.recognitionData}%</span>
+            <Progress value={completionRates.recognitionData} className="h-1.5" />
           </div>
-          <Progress value={completionRates.recognitionData} className="h-2" />
         </div>
       </CardContent>
-      <CardFooter className="border-t pt-4">
-        <div className="w-full space-y-2">
+      <CardFooter className="border-t pt-2 px-3 pb-2">
+        <div className="w-full space-y-1">
           <div className="flex justify-between items-center">
-            <span className="font-medium">Total Kelengkapan Data</span>
-            <span className="text-lg font-bold">{completionRates.overall}%</span>
+            <span className="text-xs font-medium">Total Kelengkapan Data</span>
+            <span className="text-base font-bold">{completionRates.overall}%</span>
           </div>
-          <Progress value={completionRates.overall} className="h-3" />
+          <Progress value={completionRates.overall} className="h-2" />
         </div>
       </CardFooter>
     </Card>

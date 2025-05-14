@@ -38,18 +38,18 @@ export function ResearchProjectCard({ project }: ResearchProjectCardProps) {
         <Badge className={`mb-2 ${getStatusColor(project.stt_penetapan)}`}>{project.stt_penetapan}</Badge>
         <CardTitle className="line-clamp-2 text-base">{project.judul}</CardTitle>
       </CardHeader>
-      <CardContent className="p-4 pt-3">
-        <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+      <CardContent className="p-3 pt-2">
+        <div className="mb-2 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" />
+            <Calendar className="h-3 w-3" />
             <span>{project.tahun}</span>
           </div>
           <div className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
+            <Users className="h-3 w-3" />
             <span>{project.leader}</span>
           </div>
         </div>
-        <div className="space-y-1 text-sm">
+        <div className="space-y-1 text-xs">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Skema</span>
             <span className="font-medium">{project.scheme_name}</span>
@@ -64,8 +64,8 @@ export function ResearchProjectCard({ project }: ResearchProjectCardProps) {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="border-t bg-muted/20 p-3">
-        <Button variant="outline" className="w-full" onClick={handleViewDetails}>
+      <CardFooter className="border-t bg-muted/20 p-2">
+        <Button variant="outline" className="w-full h-7 text-xs" onClick={handleViewDetails}>
           Lihat Detail
         </Button>
       </CardFooter>
