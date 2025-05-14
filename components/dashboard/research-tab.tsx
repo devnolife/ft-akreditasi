@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import React from "react"
 
 interface ResearchTabProps {
   userData: any;
@@ -222,58 +223,60 @@ export function ResearchTab({ userData, isLoading }: ResearchTabProps) {
     )
   }
 
-  const renderCard = (entry: any) => (
-    <Card key={entry.id} className="mb-4">
-      <CardHeader>
-        <CardTitle className="text-lg">{entry.judul}</CardTitle>
-        <CardDescription>
-          {entry.tahun_pelaksanaan || "Ongoing"} • {entry.sumber_dana || "Internal"}
-          {entry.status_penetapan && (
-            <Badge className="ml-2" variant={entry.status_penetapan === "Diterima" ? "default" : entry.status_penetapan === "Ditolak" ? "destructive" : "outline"}>
-              {entry.status_penetapan}
-            </Badge>
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="text-sm text-muted-foreground mb-4">
-          {entry.latar_belakang ? entry.latar_belakang.substring(0, 150) + "..." : "No description available"}
-        </div>
-
-        {entry.documents && entry.documents.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-sm font-medium mb-2">Attached Documents</h4>
-            <div className="space-y-2">
-              {entry.documents.map((doc: any) => (
-                <div key={doc.id} className="bg-muted p-2 rounded-md text-sm flex justify-between items-center">
-                  <span className="truncate">{doc.judul || doc.nama_file}</span>
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    View
-                  </a>
-                </div>
-              ))}
-            </div>
+  const renderCard = React.useCallback((entry: any): React.ReactNode => {
+    return (
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="text-lg">{entry.judul}</CardTitle>
+          <CardDescription>
+            {entry.tahun_pelaksanaan || "Ongoing"} • {entry.sumber_dana || "Internal"}
+            {entry.status_penetapan && (
+              <Badge className="ml-2" variant={entry.status_penetapan === "Diterima" ? "default" : entry.status_penetapan === "Ditolak" ? "destructive" : "outline"}>
+                {entry.status_penetapan}
+              </Badge>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground mb-4">
+            {entry.latar_belakang ? entry.latar_belakang.substring(0, 150) + "..." : "No description available"}
           </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1"
-          onClick={() => openUploadDialog(entry)}
-        >
-          <Upload className="h-4 w-4" />
-          Upload Document
-        </Button>
-      </CardFooter>
-    </Card>
-  )
+
+          {entry.documents && entry.documents.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium mb-2">Attached Documents</h4>
+              <div className="space-y-2">
+                {entry.documents.map((doc: any) => (
+                  <div key={doc.id} className="bg-muted p-2 rounded-md text-sm flex justify-between items-center">
+                    <span className="truncate">{doc.judul || doc.nama_file}</span>
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      View
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => openUploadDialog(entry)}
+          >
+            <Upload className="h-4 w-4" />
+            Upload Document
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }, [openUploadDialog]);
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -56,18 +56,27 @@ export function FormBuilder({
 
   // Initialize form data with initial values
   useEffect(() => {
-    const initialFormData = { ...initialData }
-    setFormData(initialFormData)
+    // Only update if initialData is different from current formData
+    const initialFormDataStr = JSON.stringify(initialData);
+    const currentFormDataStr = JSON.stringify(formData);
 
-    // Set image previews for existing images
-    const previews: Record<string, string> = {}
-    fields.forEach((field) => {
-      if (field.type === "file" && field.name.includes("Image") && initialData[field.name]) {
-        previews[field.name] = initialData[field.name]
+    if (initialFormDataStr !== currentFormDataStr) {
+      const initialFormData = { ...initialData };
+      setFormData(initialFormData);
+
+      // Set image previews for existing images
+      const previews: Record<string, string> = {};
+      fields.forEach((field) => {
+        if (field.type === "file" && field.name.includes("Image") && initialData[field.name]) {
+          previews[field.name] = initialData[field.name];
+        }
+      });
+
+      if (Object.keys(previews).length > 0) {
+        setImagePreview(previews);
       }
-    })
-    setImagePreview(previews)
-  }, [initialData, fields])
+    }
+  }, [initialData, fields, formData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
@@ -308,8 +317,7 @@ export function FormBuilder({
                 </Label>
                 <Select
                   onValueChange={(value) => handleSelectChange(field.name, value)}
-                  value={formData[field.name] || ""}
-                  defaultValue={formData[field.name] || ""}
+                  value={formData[field.name] || undefined}
                 >
                   <SelectTrigger id={field.name} className={errors[field.name] ? "border-red-500" : ""}>
                     <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />

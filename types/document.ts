@@ -26,6 +26,20 @@ export interface Document {
   updatedAt?: string
 }
 
+export interface DocumentMetadata {
+  title: string
+  description?: string
+  tags?: string[]
+  category: string
+  userId: string
+  uploadDate: string
+  fileSize: number
+  fileType: string
+  fileName: string
+  version?: number
+  relatedItemId?: string
+}
+
 export interface DocumentVersion {
   id: string
   documentId: string

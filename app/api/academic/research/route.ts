@@ -47,25 +47,45 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
-    if (!data.judul) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 })
+    // Enhanced validation
+    if (!data.judul?.trim()) {
+      return NextResponse.json({ error: "Judul penelitian is required" }, { status: 400 })
     }
 
-    const researchProject = await prisma.research_project.create({
-      data: {
-        ...data,
-        user_id: session.user.id,
-        tanggal_mulai: data.tanggal_mulai ? new Date(data.tanggal_mulai) : new Date(),
-        tanggal_selesai: data.tanggal_selesai ? new Date(data.tanggal_selesai) : null,
-        tahun_pelaksanaan: data.tahun_pelaksanaan ? parseInt(data.tahun_pelaksanaan) : null,
-        tahun_pengajuan_pertama: data.tahun_pengajuan_pertama ? parseInt(data.tahun_pengajuan_pertama) : null,
-      }
-    })
+    // Ensure dates are properly handled
+    if (!data.tanggal_mulai) {
+      return NextResponse.json({ error: "Tanggal mulai is required" }, { status: 400 })
+    }
 
-    return NextResponse.json(researchProject, { status: 201 })
-  } catch (error) {
+    try {
+      // Create research project with safety checks
+      const researchProject = await prisma.research_project.create({
+        data: {
+          ...data,
+          judul: data.judul.trim(),
+          user_id: session.user.id,
+          tanggal_mulai: data.tanggal_mulai ? new Date(data.tanggal_mulai) : new Date(),
+          tanggal_selesai: data.tanggal_selesai ? new Date(data.tanggal_selesai) : null,
+          tahun_pelaksanaan: data.tahun_pelaksanaan ? parseInt(data.tahun_pelaksanaan) : null,
+          tahun_pengajuan_pertama: data.tahun_pengajuan_pertama ? parseInt(data.tahun_pengajuan_pertama) : null,
+          jumlah_dana: data.jumlah_dana?.toString() || null
+        }
+      })
+
+      return NextResponse.json(researchProject, { status: 201 })
+    } catch (dbError: any) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({
+        error: "Failed to create research project",
+        details: dbError.message
+      }, { status: 500 })
+    }
+  } catch (error: any) {
     console.error("Error creating research project:", error)
-    return NextResponse.json({ error: "Failed to create research project" }, { status: 500 })
+    return NextResponse.json({
+      error: "Failed to create research project",
+      details: error.message
+    }, { status: 500 })
   }
 }
 
@@ -84,6 +104,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Research project ID is required" }, { status: 400 })
     }
 
+    if (!data.judul?.trim()) {
+      return NextResponse.json({ error: "Judul penelitian is required" }, { status: 400 })
+    }
+
     // Check if the user owns this research project
     const researchProject = await prisma.research_project.findUnique({
       where: { id: data.id },
@@ -97,22 +121,35 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const updatedResearchProject = await prisma.research_project.update({
-      where: { id: data.id },
-      data: {
-        ...data,
-        tanggal_mulai: data.tanggal_mulai ? new Date(data.tanggal_mulai) : undefined,
-        tanggal_selesai: data.tanggal_selesai ? new Date(data.tanggal_selesai) : null,
-        tahun_pelaksanaan: data.tahun_pelaksanaan ? parseInt(data.tahun_pelaksanaan) : null,
-        tahun_pengajuan_pertama: data.tahun_pengajuan_pertama ? parseInt(data.tahun_pengajuan_pertama) : null,
-        updated_at: new Date(),
-      }
-    })
+    try {
+      const updatedResearchProject = await prisma.research_project.update({
+        where: { id: data.id },
+        data: {
+          ...data,
+          judul: data.judul.trim(),
+          tanggal_mulai: data.tanggal_mulai ? new Date(data.tanggal_mulai) : undefined,
+          tanggal_selesai: data.tanggal_selesai ? new Date(data.tanggal_selesai) : null,
+          tahun_pelaksanaan: data.tahun_pelaksanaan ? parseInt(data.tahun_pelaksanaan) : null,
+          tahun_pengajuan_pertama: data.tahun_pengajuan_pertama ? parseInt(data.tahun_pengajuan_pertama) : null,
+          jumlah_dana: data.jumlah_dana?.toString() || null,
+          updated_at: new Date(),
+        }
+      })
 
-    return NextResponse.json(updatedResearchProject, { status: 200 })
-  } catch (error) {
+      return NextResponse.json(updatedResearchProject, { status: 200 })
+    } catch (dbError: any) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({
+        error: "Failed to update research project",
+        details: dbError.message
+      }, { status: 500 })
+    }
+  } catch (error: any) {
     console.error("Error updating research project:", error)
-    return NextResponse.json({ error: "Failed to update research project" }, { status: 500 })
+    return NextResponse.json({
+      error: "Failed to update research project",
+      details: error.message
+    }, { status: 500 })
   }
 }
 

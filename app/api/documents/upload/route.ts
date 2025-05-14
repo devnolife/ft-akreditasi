@@ -1,77 +1,127 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { uploadFile } from "@/lib/minio-upload"
 import prisma from "@/lib/prisma"
-import { DocumentCategory } from "@prisma/client"
+import { DocumentCategory as PrismaDocumentCategory } from "@prisma/client"
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
     const session = await getServerSession(authOptions)
-
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Parse form data
     const formData = await request.formData()
 
+    // Get required fields
     const file = formData.get("file") as File
     const title = formData.get("title") as string
-    const description = formData.get("description") as string
-    const category = formData.get("category") as DocumentCategory
-    const tags = JSON.parse(formData.get("tags") as string || "[]") as string[]
-    const relatedItemId = formData.get("relatedItemId") as string
+    const category = formData.get("category") as string
 
-    if (!file || !title || !category) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    // Get optional fields
+    const description = formData.get("description") as string || ""
+    const relatedItemId = formData.get("relatedItemId") as string || ""
+    const tags = formData.get("tags")
+      ? JSON.parse(formData.get("tags") as string)
+      : []
+
+    // Validate required fields
+    if (!file) {
+      return NextResponse.json({ error: "File is required" }, { status: 400 })
     }
 
-    // In a real-world scenario, you would:
-    // 1. Upload the file to a storage service (S3, Azure, etc.)
-    // 2. Get the URL of the uploaded file
-    // For this example, we'll simulate that with a placeholder URL
+    if (!category) {
+      return NextResponse.json({ error: "Category is required" }, { status: 400 })
+    }
 
-    const fileBytes = await file.arrayBuffer()
-    const buffer = Buffer.from(fileBytes)
+    // Prepare metadata for MinIO
+    const metadata = {
+      userId: session.user.id,
+      category,
+      title: title || file.name,
+      description,
+      relatedItemId,
+      tags
+    }
 
-    // Mock upload, in production use a real storage service like AWS S3
-    const fileUrl = `https://example.com/uploads/${file.name}`
-    const thumbnailUrl = `https://example.com/thumbnails/${file.name}`
+    // Upload file to MinIO
+    const uploadResult = await uploadFile(formData, metadata)
 
-    // Create document record in database
+    if (!uploadResult.success) {
+      return NextResponse.json({
+        error: "Upload failed",
+        details: uploadResult.error
+      }, { status: 500 })
+    }
+
+    // Create database record for the document
+    let relatedItemField = {}
+
+    // Set the related item field based on the category
+    if (relatedItemId) {
+      switch (category) {
+        case "research":
+          relatedItemField = { research_project: { connect: { id: relatedItemId } } }
+          break
+
+        case "community_service":
+          relatedItemField = { community_service: { connect: { id: relatedItemId } } }
+          break
+
+        case "publication":
+          relatedItemField = { publication: { connect: { id: relatedItemId } } }
+          break
+
+        case "intellectual_property":
+          relatedItemField = { intellectual_prop: { connect: { id: relatedItemId } } }
+          break
+
+        case "recognition":
+          relatedItemField = { recognition: { connect: { id: relatedItemId } } }
+          break
+      }
+    }
+
+    // Create the document record in the database
     const document = await prisma.document.create({
       data: {
-        judul: title,
+        judul: title || file.name,
         deskripsi: description,
         nama_file: file.name,
-        ukuran_file: buffer.length,
+        ukuran_file: file.size,
         tipe_file: file.type,
-        url: fileUrl,
-        url_thumbnail: thumbnailUrl,
-        kategori: category,
+        url: uploadResult.url,
+        url_thumbnail: file.type.startsWith("image/") ? uploadResult.url : null,
+        kategori: category.toUpperCase() as PrismaDocumentCategory,
         tag: tags,
-        user_id: session.user.id,
-        // Connect to related item based on category
-        ...(category === "RESEARCH" && relatedItemId && {
-          research_project: { connect: { id: relatedItemId } }
-        }),
-        ...(category === "COMMUNITY_SERVICE" && relatedItemId && {
-          community_service: { connect: { id: relatedItemId } }
-        }),
-        ...(category === "PUBLICATION" && relatedItemId && {
-          publication: { connect: { id: relatedItemId } }
-        }),
-        ...(category === "INTELLECTUAL_PROPERTY" && relatedItemId && {
-          intellectual_prop: { connect: { id: relatedItemId } }
-        }),
-        ...(category === "RECOGNITION" && relatedItemId && {
-          recognition: { connect: { id: relatedItemId } }
-        }),
-      }
+        versi: 1,
+        user: { connect: { id: session.user.id } },
+        ...relatedItemField,
+        versions: {
+          create: {
+            nomor_versi: 1,
+            nama_file: file.name,
+            ukuran_file: file.size,
+            url: uploadResult.url,
+            deskripsi_perubahan: "Initial upload",
+            created_by: session.user.id,
+          },
+        },
+      },
+      include: {
+        versions: true,
+      },
     })
 
     return NextResponse.json(document, { status: 201 })
   } catch (error) {
     console.error("Error uploading document:", error)
-    return NextResponse.json({ error: "Failed to upload document" }, { status: 500 })
+    return NextResponse.json({
+      error: "Failed to upload document",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 })
   }
 } 

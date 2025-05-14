@@ -11,6 +11,7 @@ import { getUserData, saveUserData } from "@/lib/data-service"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 import type { DocumentCategory } from "@/types/document"
+import React from "react"
 
 interface EntryManagerProps {
   title: string
@@ -56,7 +57,8 @@ export function EntryManager({
   useEffect(() => {
     // If we've already processed initialData and it's provided, skip API fetching
     if (initialData && !initialDataProcessed.current) {
-      setEntries(Array.isArray(initialData) ? initialData : [initialData].filter(Boolean));
+      const dataToUse = Array.isArray(initialData) ? initialData : [initialData].filter(Boolean);
+      setEntries(dataToUse);
       setIsLoading(false);
       initialDataProcessed.current = true;
       return;
@@ -127,31 +129,64 @@ export function EntryManager({
 
       // If there's a custom onAdd handler, use it
       if (onAdd) {
-        const result = await onAdd(formData);
-        // Update local state with the result from the API
-        setEntries([result, ...entries]);
+        setIsLoading(true); // Show loading state
+        try {
+          const result = await onAdd(formData);
+          // Update local state with the result from the API
+          setEntries([result, ...entries]);
+          setIsAddDialogOpen(false); // Close dialog immediately after update
+
+          toast({
+            title: "Success",
+            description: `${title} added successfully.`,
+          });
+        } catch (error: any) {
+          console.error(`Error adding ${dataKey}:`, error);
+          toast({
+            title: "Error",
+            description: error.message || `Failed to add ${title.toLowerCase()}.`,
+            variant: "destructive",
+          });
+          // Don't close the dialog so user can fix the issue
+          return;
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         // Default behavior with local state
         const updatedEntries = [...entries, newEntry]
         setEntries(updatedEntries)
 
-        // Then save to backend - don't need to update state again
-        await saveUserData(user.id, {
-          [dataKey]: updatedEntries,
-        })
+        try {
+          // Then save to backend - don't need to update state again
+          await saveUserData(user.id, {
+            [dataKey]: updatedEntries,
+          });
+
+          setIsAddDialogOpen(false); // Close dialog immediately after update
+
+          toast({
+            title: "Success",
+            description: `${title} added successfully.`,
+          });
+        } catch (error: any) {
+          console.error(`Error adding ${dataKey}:`, error);
+          // Revert the local state change
+          setEntries(entries);
+
+          toast({
+            title: "Error",
+            description: error.message || `Failed to add ${title.toLowerCase()}.`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
-
-      setIsAddDialogOpen(false) // Close dialog immediately after update
-
-      toast({
-        title: "Success",
-        description: `${title} added successfully.`,
-      })
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error adding ${dataKey}:`, error)
       toast({
         title: "Error",
-        description: `Failed to add ${title.toLowerCase()}.`,
+        description: error.message || `Failed to add ${title.toLowerCase()}.`,
         variant: "destructive",
       })
     }
@@ -163,15 +198,39 @@ export function EntryManager({
     try {
       // If there's a custom onEdit handler, use it
       if (onEdit && currentEntry?.id) {
-        const result = await onEdit({
-          id: currentEntry.id,
-          ...formData
-        });
+        setIsLoading(true);
+        try {
+          const result = await onEdit({
+            id: currentEntry.id,
+            ...formData
+          });
 
-        // Update local state with the result from the API
-        setEntries(entries.map(entry =>
-          entry.id === result.id ? result : entry
-        ));
+          // Update local state with the result from the API
+          setEntries(entries.map(entry =>
+            entry.id === result.id ? result : entry
+          ));
+
+          // Reset state and close dialog immediately
+          setIsEditDialogOpen(false);
+          setCurrentEntry(null);
+          setCurrentEntryIndex(null);
+
+          toast({
+            title: "Success",
+            description: `${title} updated successfully.`,
+          });
+        } catch (error: any) {
+          console.error(`Error updating ${dataKey}:`, error);
+          toast({
+            title: "Error",
+            description: error.message || `Failed to update ${title.toLowerCase()}.`,
+            variant: "destructive",
+          });
+          // Don't close the dialog so user can fix the issue
+          return;
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         // Default behavior with local state
         const updatedEntry = {
@@ -185,26 +244,39 @@ export function EntryManager({
         updatedEntries[currentEntryIndex] = updatedEntry
         setEntries(updatedEntries)
 
-        // Then save to backend without updating state again
-        await saveUserData(user.id, {
-          [dataKey]: updatedEntries,
-        })
+        try {
+          // Then save to backend without updating state again
+          await saveUserData(user.id, {
+            [dataKey]: updatedEntries,
+          });
+
+          // Reset state and close dialog immediately
+          setIsEditDialogOpen(false);
+          setCurrentEntry(null);
+          setCurrentEntryIndex(null);
+
+          toast({
+            title: "Success",
+            description: `${title} updated successfully.`,
+          });
+        } catch (error: any) {
+          // Revert the local state change
+          setEntries(entries);
+
+          console.error(`Error updating ${dataKey}:`, error);
+          toast({
+            title: "Error",
+            description: error.message || `Failed to update ${title.toLowerCase()}.`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
-
-      // Reset state and close dialog immediately
-      setIsEditDialogOpen(false)
-      setCurrentEntry(null)
-      setCurrentEntryIndex(null)
-
-      toast({
-        title: "Success",
-        description: `${title} updated successfully.`,
-      })
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error updating ${dataKey}:`, error)
       toast({
         title: "Error",
-        description: `Failed to update ${title.toLowerCase()}.`,
+        description: error.message || `Failed to update ${title.toLowerCase()}.`,
         variant: "destructive",
       })
     }
@@ -319,47 +391,49 @@ export function EntryManager({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {entries.map((entry, index) => (
-            renderCard ? renderCard(entry) : (
-              <Card key={entry.id || index} className="overflow-hidden hover:shadow-md transition-shadow">
-                {imageFieldName && entry[imageFieldName] && (
-                  <div className="aspect-video relative">
-                    <Image
-                      src={entry[imageFieldName] || "/placeholder.svg"}
-                      alt={renderPreview(entry)}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <CardHeader className={imageFieldName && entry[imageFieldName] ? "pt-3 pb-1 px-3" : "p-3 pb-1"}>
-                  <CardTitle className="text-base line-clamp-2">{renderPreview(entry)}</CardTitle>
-                  {entry.createdAt && (
-                    <CardDescription className="text-xs">
-                      {new Date(entry.createdAt).toLocaleDateString("id-ID", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </CardDescription>
+            <React.Fragment key={entry.id || index}>
+              {renderCard ? renderCard(entry) : (
+                <Card className="overflow-hidden hover:shadow-md transition-shadow">
+                  {imageFieldName && entry[imageFieldName] && (
+                    <div className="aspect-video relative">
+                      <Image
+                        src={entry[imageFieldName] || "/placeholder.svg"}
+                        alt={renderPreview(entry)}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                   )}
-                </CardHeader>
-                <CardFooter className="flex justify-end gap-2 pt-1 pb-3 px-3">
-                  <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => openEditDialog(entry, index)}>
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => handleDeleteEntry(index)}
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Hapus
-                  </Button>
-                </CardFooter>
-              </Card>
-            )
+                  <CardHeader className={imageFieldName && entry[imageFieldName] ? "pt-3 pb-1 px-3" : "p-3 pb-1"}>
+                    <CardTitle className="text-base line-clamp-2">{renderPreview(entry)}</CardTitle>
+                    {entry.createdAt && (
+                      <CardDescription className="text-xs">
+                        {new Date(entry.createdAt).toLocaleDateString("id-ID", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardFooter className="flex justify-end gap-2 pt-1 pb-3 px-3">
+                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => openEditDialog(entry, index)}>
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDeleteEntry(index)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Hapus
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )}
+            </React.Fragment>
           ))}
         </div>
       )}

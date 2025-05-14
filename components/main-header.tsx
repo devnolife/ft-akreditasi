@@ -25,10 +25,8 @@ interface MainHeaderProps {
 }
 
 export function MainHeader({ simplified = false, showLogoutButton = false }: MainHeaderProps) {
-  const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -41,9 +39,9 @@ export function MainHeader({ simplified = false, showLogoutButton = false }: Mai
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-3">
           <UniversityLogo size="sm" showText={false} />
-          <h1 className="text-lg font-medium bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+          <h2 className="text-lg font-medium bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
             Fakultas Teknik - Data Tracker
-          </h1>
+          </h2>
         </div>
 
         {user && (

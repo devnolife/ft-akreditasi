@@ -213,10 +213,11 @@ export default function UploadDocumentPage() {
                     <option value="">Select a category</option>
                     <option value="personal">Personal</option>
                     <option value="research">Research</option>
+                    <option value="community_service">Community Service</option>
                     <option value="publication">Publication</option>
-                    <option value="community">Community Service</option>
-                    <option value="intellectual-property">Intellectual Property</option>
+                    <option value="intellectual_property">Intellectual Property</option>
                     <option value="recognition">Recognition</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
 

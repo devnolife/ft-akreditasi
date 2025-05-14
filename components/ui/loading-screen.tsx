@@ -10,7 +10,6 @@ export function LoadingScreen({ message = "Loading..." }: LoadingScreenProps) {
       <div className="flex flex-col items-center gap-4 p-8 rounded-lg bg-background shadow-lg">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
         <p className="text-lg font-medium text-center">{message}</p>
-        <p className="text-sm text-muted-foreground">Please wait while we prepare your content</p>
       </div>
     </div>
   )

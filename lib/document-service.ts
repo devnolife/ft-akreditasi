@@ -256,20 +256,48 @@ export async function createDocument(data: any) {
   }
 }
 
-// Update a document
+// Update an existing document
 export async function updateDocument(documentId: string, data: any) {
   try {
+    // Update document record in the database
     const document = await prisma.document.update({
       where: { id: documentId },
       data: {
-        ...data,
-        tags: data.tags || [],
+        ...(data.metadata?.title && { judul: data.metadata.title }),
+        ...(data.metadata?.description !== undefined && { deskripsi: data.metadata.description }),
+        ...(data.metadata?.tags && { tag: data.metadata.tags }),
+        updated_at: new Date(),
       },
-    })
-    return document
+      include: {
+        versions: {
+          orderBy: {
+            nomor_versi: "desc",
+          },
+        },
+      },
+    });
+
+    // Transform database model to the expected Document type
+    return {
+      id: document.id,
+      title: document.judul,
+      description: document.deskripsi || undefined,
+      fileName: document.nama_file,
+      fileSize: document.ukuran_file,
+      fileType: document.tipe_file,
+      uploadDate: document.created_at.toISOString(),
+      category: document.kategori.toLowerCase() as DocumentCategory,
+      tags: document.tag,
+      url: document.url,
+      thumbnailUrl: document.url_thumbnail || undefined,
+      version: document.versi,
+      userId: document.user_id,
+      createdAt: document.created_at.toISOString(),
+      updatedAt: document.updated_at.toISOString(),
+    };
   } catch (error) {
-    console.error("Error updating document:", error)
-    throw new Error("Failed to update document")
+    console.error("Error updating document:", error);
+    throw new Error("Failed to update document");
   }
 }
 
@@ -651,32 +679,93 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true }
 }
 
-export async function uploadDocument(documentId: string, file: File): Promise<Document> {
-  return new Promise((resolve, reject) => {
-    try {
-      // Simulate upload progress
-      setTimeout(() => {
-        // In a real app, we would upload the file to a storage service
-        // and update the document with the real URL
+// Function to upload a document with metadata
+export async function uploadDocument({ file, metadata }: {
+  file: File,
+  metadata: any
+}): Promise<Document> {
+  try {
+    // Import the MinIO upload functions dynamically to avoid server/client mismatch
+    const { finalizeUpload, processUploadedFile } = await import('./minio-upload');
 
-        // For this demo, we'll just return the document
-        const allUsersDocuments = Object.keys(localStorage)
-          .filter((key) => key.startsWith("documents_"))
-          .flatMap((key) => JSON.parse(localStorage.getItem(key) || "[]"))
+    // Create FormData to use with the MinIO upload functions
+    const formData = new FormData();
+    formData.append('file', file);
 
-        const document = allUsersDocuments.find((doc: Document) => doc.id === documentId)
+    // Process the file first
+    const processResult = await processUploadedFile(formData);
 
-        if (!document) {
-          reject(new Error(`Document with ID ${documentId} not found`))
-          return
-        }
-
-        resolve(document)
-      }, 1500) // Simulate a delay for the upload
-    } catch (error) {
-      reject(error)
+    if (!processResult.success) {
+      throw new Error(processResult.error || 'Failed to process the file');
     }
-  })
+
+    // Prepare metadata for MinIO upload
+    const minioMetadata = {
+      userId: metadata.userId,
+      category: metadata.category,
+      relatedItemId: metadata.relatedItemId,
+      relatedItemType: metadata.category
+    };
+
+    // Finalize the upload to MinIO
+    const uploadResult = await finalizeUpload(processResult.tempFile, minioMetadata);
+
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || 'Failed to upload to storage');
+    }
+
+    // Create document record in the database
+    const document = await prisma.document.create({
+      data: {
+        judul: metadata.title,
+        deskripsi: metadata.description || "",
+        nama_file: metadata.fileName,
+        ukuran_file: metadata.fileSize,
+        tipe_file: metadata.fileType,
+        url: uploadResult.url,
+        url_thumbnail: uploadResult.metadata.mimeType.startsWith('image') ? uploadResult.url : null,
+        kategori: metadata.category.toUpperCase() as PrismaDocumentCategory,
+        tag: metadata.tags || [],
+        versi: 1,
+        user: { connect: { id: metadata.userId } },
+        versions: {
+          create: {
+            nomor_versi: 1,
+            nama_file: metadata.fileName,
+            ukuran_file: metadata.fileSize,
+            url: uploadResult.url,
+            deskripsi_perubahan: "Initial upload",
+            created_by: metadata.userId,
+          },
+        },
+      },
+      include: {
+        versions: true,
+      },
+    });
+
+    // Transform database model to the expected Document type
+    return {
+      id: document.id,
+      title: document.judul,
+      description: document.deskripsi || undefined,
+      fileName: document.nama_file,
+      fileSize: document.ukuran_file,
+      fileType: document.tipe_file,
+      uploadDate: document.created_at.toISOString(),
+      category: document.kategori.toLowerCase() as DocumentCategory,
+      tags: document.tag,
+      url: document.url,
+      thumbnailUrl: document.url_thumbnail || undefined,
+      version: document.versi,
+      userId: document.user_id,
+      createdAt: document.created_at.toISOString(),
+      updatedAt: document.updated_at.toISOString(),
+    };
+  } catch (error) {
+    console.error("Error uploading document:", error);
+    throw new Error("Failed to upload document");
+  }
 }
 
 export async function getDocumentsByRelatedItemUser(relatedItemId: string, userId: string): Promise<Document[]> {
