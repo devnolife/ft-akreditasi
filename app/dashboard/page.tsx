@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   // Using SWR for data fetching with caching
   const { data: userData, error, isLoading } = useSWR(
-    user ? `/api/users/profile?userId=${user.id}` : null,
+    user ? `/api/users/graphql-profile?nidn=${user.username}` : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -38,13 +38,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (userData) {
       setPersonalData({
-        fullName: userData.name,
-        email: userData.username,
-        position: userData.personal_data?.jabatan || "",
-        department: userData.study_program?.nama || "",
-        frontDegree: userData.front_degree || "",
-        backDegree: userData.back_degree || "",
+        fullName: userData.user.name,
+        email: userData.user.username,
+        position: userData.user.personal_data?.jabatan || "",
+        department: userData.user.study_program?.nama || "",
+        frontDegree: userData.user.front_degree || "",
+        backDegree: userData.user.back_degree || "",
       })
+
+      // Log data comparison if available
+      if (userData.dataComparison) {
+        console.log('Data Comparison:', userData.dataComparison.message)
+      }
     }
   }, [userData])
 

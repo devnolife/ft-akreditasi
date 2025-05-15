@@ -33,56 +33,80 @@ export function MainHeader({ simplified = false, showLogoutButton = false }: Mai
     router.push("/login")
   }
 
-  // Modern header design with simplified layout
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-3">
           <UniversityLogo size="sm" showText={false} />
-          <h2 className="text-lg font-medium bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-red-700 to-red-500 bg-clip-text text-transparent">
             Fakultas Teknik - Data Tracker
-          </h2>
+          </h1>
         </div>
 
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
+                variant="outline"
                 className={cn(
-                  "relative h-8 gap-2 px-2 rounded-full",
-                  "bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 border border-teal-200",
+                  "relative h-10 pl-3 pr-8 rounded-full hover:bg-red-50",
+                  "border-red-200 hover:border-red-300 transition-colors",
+                  "flex items-center justify-center gap-3"
                 )}
               >
-                <Avatar className="h-7 w-7">
-                  <AvatarImage src="/abstract-geometric-shapes.png" alt={user.name} />
-                  <AvatarFallback className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white">
+                <Avatar className="h-7 w-7 rounded-full ring-2 ring-red-200 ring-offset-2">
+                  <AvatarImage
+                    src="https://simak.unismuh.ac.id/upload/dosen/0917109102_.jpg"
+                    alt={user.name}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold">
                     {user.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:inline-block font-medium text-sm text-slate-700">{user.name}</span>
+                <span className="hidden sm:inline-block font-semibold text-sm text-slate-800 pr-2">{user.name}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
+            <DropdownMenuContent
+              className="w-64 mt-2 p-2"
+              align="end"
+              forceMount
+              sideOffset={8}
+            >
+              <div className="flex items-center gap-3 px-2 py-3 mb-2 bg-red-50 rounded-md">
+                <Avatar className="h-10 w-10 rounded-full ring-2 ring-red-200">
+                  <AvatarImage
+                    src="https://simak.unismuh.ac.id/upload/dosen/0917109102_.jpg"
+                    alt={user.name}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold">
+                    {user.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <p className="text-sm font-bold leading-none text-slate-900">{user.name}</p>
+                  <p className="text-xs text-slate-600 font-medium mt-1">
                     {user.role === "admin" ? "Administrator" : user.role === "prodi" ? "Koordinator Program" : "Dosen"}
                   </p>
                 </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard" className="cursor-pointer">
+              </div>
+
+              <DropdownMenuItem asChild className="px-2 py-2 rounded-md cursor-pointer">
+                <Link href="/dashboard" className="flex items-center">
                   <User className="mr-2 h-4 w-4" />
-                  <span>Data Diri</span>
+                  <span className="font-medium">Data Diri</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+
+              <DropdownMenuSeparator className="my-2" />
+
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="px-2 py-2 rounded-md cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Keluar</span>
+                <span className="font-medium">Keluar</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

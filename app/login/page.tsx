@@ -237,7 +237,7 @@ export default function LoginPage() {
                   <div className="text-sm text-center text-muted-foreground mt-6 border-t pt-6">
                     <p>Kredensial Demo:</p>
                     <div className="font-mono bg-muted p-2 rounded text-xs mt-2">
-                      <p><strong>Dosen:</strong> username: <span className="font-medium">dosen</span> | password: <span className="font-medium">password123</span></p>
+                      <p><strong>Dosen:</strong> username: <span className="font-medium">0917109102</span> | password: <span className="font-medium">password123</span></p>
                       <p className="mt-1"><strong>Admin:</strong> username: <span className="font-medium">admin</span> | password: <span className="font-medium">password123</span></p>
                       <p className="mt-1"><strong>Prodi:</strong> username: <span className="font-medium">prodi</span> | password: <span className="font-medium">password123</span></p>
                     </div>
