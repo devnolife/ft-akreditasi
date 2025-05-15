@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { EntryManager } from "@/components/dynamic-form/entry-manager"
 import { communityServiceFields } from "./form-schemas"
@@ -31,10 +31,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { motion } from "framer-motion"
+import { toast } from "@/components/ui/use-toast"
 
 interface CommunityServiceTabProps {
   userData: any;
   isLoading: boolean;
+  apiEndpoint?: string;
+  onDataChange?: () => Promise<void>;
 }
 
 // Updated interface to include all fields from the API
@@ -96,7 +99,7 @@ interface CommunityService {
   id_jenis?: string;
 }
 
-export function CommunityServiceTab({ userData, isLoading }: CommunityServiceTabProps) {
+export function CommunityServiceTab({ userData, isLoading: initialLoading, apiEndpoint, onDataChange }: CommunityServiceTabProps) {
   const { user } = useAuth()
   const [communityServiceData, setCommunityServiceData] = useState<CommunityService[]>([])
   const [loading, setLoading] = useState<boolean>(false)
@@ -211,7 +214,7 @@ export function CommunityServiceTab({ userData, isLoading }: CommunityServiceTab
     }, 0)
   }
 
-  if (isLoading || loading) {
+  if (initialLoading || loading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between animate-pulse">

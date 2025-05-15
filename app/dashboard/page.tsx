@@ -19,13 +19,23 @@ import useSWR from 'swr'
 // Creating a fetcher function for SWR
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
+// Adding API endpoints for different data types
+const API_ENDPOINTS = {
+  research: "/api/academic/research",
+  communityService: "/api/academic/community-service",
+  publications: "/api/academic/publications",
+  intellectualProperty: "/api/academic/intellectual-property",
+  recognition: "/api/academic/recognition",
+  personalData: "/api/users/profile"
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("data-diri")
   const [personalData, setPersonalData] = useState<any>(null)
 
   // Using SWR for data fetching with caching
-  const { data: userData, error, isLoading } = useSWR(
+  const { data: userData, error, isLoading, mutate } = useSWR(
     user ? `/api/users/graphql-profile?nidn=${user.username}` : null,
     fetcher,
     {
@@ -34,6 +44,12 @@ export default function Dashboard() {
       dedupingInterval: 300000, // 5 minutes
     }
   )
+
+  // Function to handle data updates and additions
+  const handleDataChange = async () => {
+    // Refresh data after changes
+    await mutate()
+  }
 
   useEffect(() => {
     if (userData) {
@@ -153,7 +169,12 @@ export default function Dashboard() {
                 </TabsContent>
 
                 <TabsContent value="penelitian" className="m-0">
-                  <ResearchTab userData={userData} isLoading={isLoading} />
+                  <ResearchTab
+                    userData={userData}
+                    isLoading={isLoading}
+                    apiEndpoint={API_ENDPOINTS.research}
+                    onDataChange={handleDataChange}
+                  />
                 </TabsContent>
 
                 <TabsContent value="pengabdian" className="m-0">
