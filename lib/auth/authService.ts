@@ -18,6 +18,22 @@ interface LoginAttempts {
 // Store login attempts in memory (in a real app, this would be in a database)
 const loginAttempts: LoginAttempts = {}
 
+// Create the auth service object
+export const authService = {
+  login: authenticateUser,
+  logout: logoutUser,
+  getCurrentUser,
+  isAuthenticated,
+  hasPermission,
+  hasRole,
+  hasAccessToProgram,
+  updateLastLogin,
+  refreshSession,
+  getProdiUsers,
+  getAllStudyPrograms,
+  getStudyProgramById,
+}
+
 /**
  * Authenticate a user with username and password
  */
